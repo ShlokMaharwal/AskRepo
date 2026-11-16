@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite dev --host 127.0.0.1 --port 5173",
     "build": "vite build",
+    "build:vercel": "node scripts/build-vercel.mjs",
+    "start": "node .output/server/index.mjs",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",

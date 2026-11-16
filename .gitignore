@@ -8,6 +8,7 @@ __pycache__/
 .env.*
 !.env.example
 backend/data/
+backend/eval/results/*.partial.jsonl
 frontend/node_modules/
 frontend/.output/
 frontend/.nitro/
