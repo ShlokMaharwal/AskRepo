@@ -1,0 +1,15 @@
+{"id": "codenest-01", "question": "How are interview invitation tokens signed and checked for expiration?", "relevant": [{"path": "server/invites.js", "symbol": "verifyInvite"}], "reviewed": false}
+{"id": "codenest-02", "question": "How is an invite bound to a single candidate identity?", "relevant": [{"path": "server/invites.js", "symbol": "consumeInvite"}], "reviewed": false}
+{"id": "codenest-03", "question": "Which server checks restrict editor-control events to interviewers?", "relevant": [{"path": "server/socket-policy.js", "symbol": "authorizeEvent"}], "reviewed": false}
+{"id": "codenest-04", "question": "How are concurrent updates to the same interview room serialized?", "relevant": [{"path": "server/room-state.js", "symbol": "createRoomQueue"}], "reviewed": false}
+{"id": "codenest-05", "question": "How does reconnecting restore an interviewer's editor lock?", "relevant": [{"path": "server/room-state.js", "symbol": "restoreRoomState"}], "reviewed": false}
+{"id": "codenest-06", "question": "How are hint quotas reserved before calling the AI provider?", "relevant": [{"path": "server/hints.js", "symbol": "reserveHint"}], "reviewed": false}
+{"id": "codenest-07", "question": "Where are Socket.io payloads validated before handlers process them?", "relevant": [{"path": "server/socket-schemas.js", "symbol": "validateSocketInput"}], "reviewed": false}
+{"id": "codenest-08", "question": "How does the execution adapter run code and handle supported runtimes?", "relevant": [{"path": "src/lib/wandbox.ts", "symbol": "executeCode"}], "reviewed": false}
+{"id": "codenest-09", "question": "How are submitted solutions graded against test cases?", "relevant": [{"path": "src/lib/grading.ts", "symbol": "gradeSolution"}], "reviewed": false}
+{"id": "codenest-10", "question": "How are candidate code and user data delimited inside the AI hint prompt?", "relevant": [{"path": "src/lib/gemini.ts", "symbol": "buildHintPrompt"}], "reviewed": false}
+{"id": "codenest-11", "question": "How is an AI interview review validated and normalized?", "relevant": [{"path": "src/lib/gemini.ts", "symbol": "generateReview"}], "reviewed": false}
+{"id": "codenest-12", "question": "How does the HTTP JSON reader enforce input-size and schema constraints?", "relevant": [{"path": "src/lib/api.ts", "symbol": "readJSON"}], "reviewed": false}
+{"id": "codenest-13", "question": "How does Redis rate limiting enforce a request window?", "relevant": [{"path": "server/rate-limit.js", "symbol": "consumeRateLimit"}], "reviewed": false}
+{"id": "codenest-14", "question": "How does the application establish and reuse its MongoDB connection?", "relevant": [{"path": "src/lib/mongodb.ts", "symbol": "connectDB"}], "reviewed": false}
+{"id": "codenest-15", "question": "How are recorded session snapshots played back in the replay page?", "relevant": [{"path": "src/app/room/[roomId]/replay/page.tsx"}], "reviewed": false}

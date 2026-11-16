@@ -1,0 +1,573 @@
+{
+  "provider": "extractive",
+  "sampled_answers": 20,
+  "seed": 42,
+  "cited_answers": 20,
+  "not_found_answers": 0,
+  "citations_checked": 60,
+  "citations_valid": 60,
+  "citation_validity_rate": 1.0,
+  "note": "Structural range validity only; this does not establish semantic faithfulness.",
+  "rows": [
+    {
+      "id": "dptrace-11",
+      "repo": "DPTrace",
+      "notFound": false,
+      "answer": "Repository evidence for your question:\n\n`usePlayback` [src/hooks/usePlayback.js:13-22]\n\n    export function usePlayback() {\n      const { isPlaying, speed, stepForward, steps, currentStep } = useStore();\n      const intervalRef = useRef(null);\n    \n      useEffect(() => {\n        if (intervalRef.current) clearInterval(intervalRef.current);\n        if (isPlaying && currentStep < steps.length - 1) {\n          const ms = SPEED_TO_MS[speed] ?? 300;\n          intervalRef.current = setInterval(() => {\n            const { currentStep: cs, steps: ss, isPlaying: ip } = useStore.getState();\n\n`anonymous` [src/hooks/usePlayback.js:17-26]\n\n      useEffect(() => {\n        if (intervalRef.current) clearInterval(intervalRef.current);\n        if (isPlaying && currentStep < steps.length - 1) {\n          const ms = SPEED_TO_MS[speed] ?? 300;\n          intervalRef.current = setInterval(() => {\n            const { currentStep: cs, steps: ss, isPlaying: ip } = useStore.getState();\n            if (!ip || cs >= ss.length - 1) {\n              clearInterval(intervalRef.current);\n              useStore.getState().setIsPlaying(false);\n            } else {\n\n`PlaybackBar` [src/components/controls/PlaybackBar.jsx:9-18]\n\n    export default function PlaybackBar({ truncated }) {\n      usePlayback();\n      const {\n        steps, currentStep, isPlaying, speed,\n        togglePlay, stepForward, stepBackward,\n        setCurrentStep, setSpeed, stats,\n      } = useStore();\n    \n      useEffect(() => {\n        function onKey(e) {",
+      "citations": [
+        {
+          "path": "src/hooks/usePlayback.js",
+          "startLine": 13,
+          "endLine": 22
+        },
+        {
+          "path": "src/hooks/usePlayback.js",
+          "startLine": 17,
+          "endLine": 26
+        },
+        {
+          "path": "src/components/controls/PlaybackBar.jsx",
+          "startLine": 9,
+          "endLine": 18
+        }
+      ],
+      "valid": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "id": "seekr-08",
+      "repo": "Seekr",
+      "notFound": false,
+      "answer": "Repository evidence for your question:\n\n`packages/core/src/query-parser.ts` [packages/core/src/query-parser.ts:87-91]\n\n    \n    /**\n     * Build an AND clause from a list of segments.\n     * Each segment is either a quoted phrase or a stemmed term.\n     */\n\n`packages/core/src/types.ts` [packages/core/src/types.ts:41-50]\n\n      docId: string;\n      score: number;\n    }\n    \n    /** A parsed query node \u2013 supports AND, OR, and phrase clauses. */\n    export type QueryClause =\n      | { type: 'term'; value: string }\n      | { type: 'phrase'; tokens: string[]; offsets?: number[] }\n      | { type: 'and'; clauses: QueryClause[] }\n      | { type: 'or'; clauses: QueryClause[] };\n\n`imports` [packages/core/src/query-parser.ts:1-10]\n\n    /**\n     * Query Parser\n     *\n     * Grammar (simplified):\n     *   query   := clause (WS clause)*\n     *   clause  := OR_clause | AND_clause\n     *   AND_clause := atom (WS atom)*           -- implicit AND\n     *   OR_clause  := atom WS 'OR' WS atom\n     *   atom    := '\"' phrase '\"' | term\n     *   phrase  := term (WS term)+",
+      "citations": [
+        {
+          "path": "packages/core/src/query-parser.ts",
+          "startLine": 87,
+          "endLine": 91
+        },
+        {
+          "path": "packages/core/src/types.ts",
+          "startLine": 41,
+          "endLine": 50
+        },
+        {
+          "path": "packages/core/src/query-parser.ts",
+          "startLine": 1,
+          "endLine": 10
+        }
+      ],
+      "valid": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "id": "seekr-02",
+      "repo": "Seekr",
+      "notFound": false,
+      "answer": "Repository evidence for your question:\n\n`apps/api/src/index-manager.ts` [apps/api/src/index-manager.ts:206-209]\n\n    \n      /**\n       * Recover pending messages left by a previous crashed consumer or pending in the PEL.\n       */\n\n`resume` [apps/crawler/src/worker.ts:118-122]\n\n      resume(): void {\n        if (!this.paused) return;\n        this.paused = false;\n        logger.info('Crawler resumed');\n      }\n\n`pause` [apps/crawler/src/worker.ts:112-116]\n\n      pause(): void {\n        if (this.paused) return;\n        this.paused = true;\n        logger.info('Crawler paused');\n      }",
+      "citations": [
+        {
+          "path": "apps/api/src/index-manager.ts",
+          "startLine": 206,
+          "endLine": 209
+        },
+        {
+          "path": "apps/crawler/src/worker.ts",
+          "startLine": 118,
+          "endLine": 122
+        },
+        {
+          "path": "apps/crawler/src/worker.ts",
+          "startLine": 112,
+          "endLine": 116
+        }
+      ],
+      "valid": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "id": "codenest-03",
+      "repo": "CodeNest",
+      "notFound": false,
+      "answer": "Repository evidence for your question:\n\n`imports` [server/socket-policy.js:1-9]\n\n    const interviewerEvents = new Set([\n      'editor-lock',\n      'editor-unlock',\n      'take-control',\n      'return-control',\n      'problem-change',\n      'timer-start',\n      'interview-end',\n    ])\n\n`Features` [README.md:36-45]\n\n    ## Features\n    \n    - Two-person rooms with server-enforced interviewer and candidate roles.\n    - Signed invite links that expire after 24 hours and bind to one candidate identity.\n    - Real-time code, language, test-case, output, notes and cursor sync through Socket.io.\n    - Interviewer controls to lock the editor, take control and return control to the candidate.\n    - Candidate AI hints with configurable room limits and server-counted usage.\n    - Saved AI reviews covering correctness, code quality, problem solving, communication and a hire recommendation.\n    - A synchronized countdown timer controlled by the interviewer.\n    - Wandbox code execution for JavaScript, TypeScript, Python, Java, C++, C, Go and Rust.\n\n`src/components/room/InterviewerBar.tsx` [src/components/room/InterviewerBar.tsx:16-25]\n\n      editorLocked: boolean\n      controlledBy: 'interviewer' | 'candidate'\n      onLockEditor: () => void\n      onUnlockEditor: () => void\n      onTakeControl: () => void\n      onReturnControl: () => void\n      onChangeProblem: () => void\n      onEndInterview: () => void\n      timerStartedAt?: number\n      timerDurationMs?: number",
+      "citations": [
+        {
+          "path": "server/socket-policy.js",
+          "startLine": 1,
+          "endLine": 9
+        },
+        {
+          "path": "README.md",
+          "startLine": 36,
+          "endLine": 45
+        },
+        {
+          "path": "src/components/room/InterviewerBar.tsx",
+          "startLine": 16,
+          "endLine": 25
+        }
+      ],
+      "valid": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "id": "codenest-01",
+      "repo": "CodeNest",
+      "notFound": false,
+      "answer": "Repository evidence for your question:\n\n`How it works` [README.md:49-57]\n\n    ## How it works\n    \n    1. Register or sign in with an email and password.\n    2. Create a room, configure its duration and hints, and optionally schedule it.\n    3. Share the invite link with the candidate, who signs in to join.\n    4. Select a problem and start the timer; the candidate writes code in the shared editor.\n    5. Run code with test inputs; the candidate can request hints while the interviewer can lock or control the editor.\n    6. Generate an AI review with a hire recommendation and end the interview.\n    7. Open the room replay from the dashboard to step through saved code snapshots and test results.\n\n`Features` [README.md:36-45]\n\n    ## Features\n    \n    - Two-person rooms with server-enforced interviewer and candidate roles.\n    - Signed invite links that expire after 24 hours and bind to one candidate identity.\n    - Real-time code, language, test-case, output, notes and cursor sync through Socket.io.\n    - Interviewer controls to lock the editor, take control and return control to the candidate.\n    - Candidate AI hints with configurable room limits and server-counted usage.\n    - Saved AI reviews covering correctness, code quality, problem solving, communication and a hire recommendation.\n    - A synchronized countdown timer controlled by the interviewer.\n    - Wandbox code execution for JavaScript, TypeScript, Python, Java, C++, C, Go and Rust.\n\n`anonymous` [tests/invites.test.ts:15-24]\n\n      it('rejects expired and tampered tokens', () => {\n        vi.useFakeTimers()\n        const token = signInvite('abcd1234', secret, 1)\n        vi.advanceTimersByTime(2000)\n        expect(verifyInvite(token, secret)).toBeNull()\n        expect(verifyInvite(token + 'x', secret)).toBeNull()\n        expect(\n          verifyInvite(jwt.sign({ roomId: 'abcd1234', role: 'interviewer' }, secret), secret),\n        ).toBeNull()\n      })",
+      "citations": [
+        {
+          "path": "README.md",
+          "startLine": 49,
+          "endLine": 57
+        },
+        {
+          "path": "README.md",
+          "startLine": 36,
+          "endLine": 45
+        },
+        {
+          "path": "tests/invites.test.ts",
+          "startLine": 15,
+          "endLine": 24
+        }
+      ],
+      "valid": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "id": "seekr-15",
+      "repo": "Seekr",
+      "notFound": false,
+      "answer": "Repository evidence for your question:\n\n`hasNearDuplicate` [apps/crawler/src/store.ts:79-88]\n\n      async hasNearDuplicate(hash: string, url: string, threshold: number): Promise<boolean> {\n        if (threshold < 0) return false;\n        if (!Number.isInteger(threshold) || threshold > 3)\n          throw new Error('SimHash threshold must be -1..3');\n        const cursor = this.col.find(\n          { url: { $ne: url }, simHashBands: { $in: simHashBands(hash) } },\n          { projection: { simHash: 1 } },\n        );\n        for await (const candidate of cursor) {\n          if (candidate.simHash && hammingDistance(hash, candidate.simHash) <= threshold) return true;\n\n`Exact and near duplicates` [docs/DESIGN_DECISIONS.md:48-55]\n\n    ## Exact and near duplicates\n    \n    SHA-256 hashes all normalized text. SimHash projects token frequencies onto 64 bits\n    using stable per-term hashes; Hamming distance estimates similarity. Four 16-bit\n    bands select Mongo candidates: with distance at most three, at least one band\n    must match. The band query excludes the same URL so content updates remain possible.\n    Short pages bypass near-duplicate filtering. This is heuristic suppression, and\n    concurrent checks/upserts across different URLs are not a global transaction.\n\n`anonymous` [packages/core/tests/features.test.ts:30-39]\n\n    describe('SimHash', () => {\n      it('is deterministic, order independent, and distinguishes unrelated text', () => {\n        expect(simHash('binary tree graph')).toBe(simHash('graph binary tree'));\n        expect(hammingDistance(simHash('binary tree'), simHash('binary tree'))).toBe(0);\n        expect(\n          hammingDistance(\n            simHash('binary tree graph algorithm'),\n            simHash('cooking recipe oven kitchen'),\n          ),\n        ).toBeGreaterThan(3);",
+      "citations": [
+        {
+          "path": "apps/crawler/src/store.ts",
+          "startLine": 79,
+          "endLine": 88
+        },
+        {
+          "path": "docs/DESIGN_DECISIONS.md",
+          "startLine": 48,
+          "endLine": 55
+        },
+        {
+          "path": "packages/core/tests/features.test.ts",
+          "startLine": 30,
+          "endLine": 39
+        }
+      ],
+      "valid": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "id": "seekr-09",
+      "repo": "Seekr",
+      "notFound": false,
+      "answer": "Repository evidence for your question:\n\n`Cached autocomplete` [docs/DESIGN_DECISIONS.md:38-46]\n\n    ## Cached autocomplete\n    \n    Each prefix node caches ten terminal-node references ordered by frequency.\n    Since frequencies only increase, updating the changed terminal plus the cached\n    winners suffices along its ancestor path. The public top-six query walks the\n    prefix and slices its winners. Requests above cache capacity use full traversal.\n    Mutation cost and memory increase in exchange for cheaper repeated prefix reads.\n    [MICROBENCHMARKS.md](MICROBENCHMARKS.md) compares both paths on synthetic data and\n    checks they return identical suggestions; timing is not asserted in tests.\n\n`anonymous` [apps/api/src/routes/autocomplete.ts:19-28]\n\n      router.get('/', (req: Request, res: Response) => {\n        const parsed = AutocompleteSchema.safeParse(req.query);\n        if (!parsed.success) {\n          res.json({ suggestions: [] });\n          return;\n        }\n    \n        const { q } = parsed.data;\n        // Normalize the prefix the same way terms are indexed\n        const prefix = q.toLowerCase().replace(/[^a-z0-9]/g, '');\n\n`Suggestions, duplicates, and snapshots` [README.md:163-172]\n\n    ### Suggestions, duplicates, and snapshots\n    \n    Autocomplete reads cached winners after walking the prefix. Spelling correction\n    proposes changes only for zero-hit terms; it does not silently rewrite queries.\n    Suggestions are based on indexed stems. SimHash candidates share a 16-bit band;\n    Hamming distance verifies them with a configurable threshold of at most three.\n    \n    Binary snapshots include document metadata, snippet text, and both positional\n    fields. Writes use a unique temporary file, fsync, and rename. A checksum rejects\n    partial/corrupt data; startup can rebuild from MongoDB. Old `index.json` snapshots",
+      "citations": [
+        {
+          "path": "docs/DESIGN_DECISIONS.md",
+          "startLine": 38,
+          "endLine": 46
+        },
+        {
+          "path": "apps/api/src/routes/autocomplete.ts",
+          "startLine": 19,
+          "endLine": 28
+        },
+        {
+          "path": "README.md",
+          "startLine": 163,
+          "endLine": 172
+        }
+      ],
+      "valid": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "id": "seekr-07",
+      "repo": "Seekr",
+      "notFound": false,
+      "answer": "Repository evidence for your question:\n\n`BM25, TF-IDF, and field boosts` [docs/DESIGN_DECISIONS.md:3-12]\n\n    ## BM25, TF-IDF, and field boosts\n    \n    BM25 defaults to `k1=1.2`, `b=0.75`: frequency saturates and body length is normalized.\n    Its smoothed IDF remains nonnegative. TF-IDF uses logarithmic frequency and smoothed\n    IDF, without length normalization. Both have tests with hand-calculated scores.\n    \n    BM25F normalizes title and body frequencies separately, weights the title, adds\n    that evidence, then saturates once. Document frequency is the union across enabled\n    fields. Weight zero reduces to body BM25, which a regression test verifies.\n    The small [Wikipedia evaluation](EVALUATION.md) found no title-boost gain, so the\n\n`Ranking` [README.md:142-151]\n\n    ### Ranking\n    \n    Body BM25 defaults to `k1=1.2`, `b=0.75`:\n    \n    ```text\n    IDF(t)     = ln(1 + (N - df(t) + 0.5) / (df(t) + 0.5))\n    score(d,q) = \u03a3 IDF(t) \u00d7 tf(t,d)(k1 + 1)\n                             / [tf(t,d) + k1(1 - b + b|d|/avgdl)]\n    ```\n    \n\n`anonymous` [packages/core/tests/features.test.ts:19-28]\n\n      it('reduces to body BM25 with title weight zero', () => {\n        const index = createIndex();\n        addDocument(index, 'a', 'binary tree tree', 'A', 'a');\n        addDocument(index, 'b', 'binary graph', 'Binary tree', 'b');\n        const regular = scoreBM25(index, ['binari', 'tree']);\n        const field = scoreBM25F(index, ['binari', 'tree'], 10, { titleWeight: 0 });\n        for (const r of regular)\n          expect(field.find((f) => f.docId === r.docId)?.score).toBeCloseTo(r.score, 12);\n        expect(scoreBM25F(index, ['tree'], 10, { titleWeight: 10 })[0]?.docId).toBe('b');\n      });",
+      "citations": [
+        {
+          "path": "docs/DESIGN_DECISIONS.md",
+          "startLine": 3,
+          "endLine": 12
+        },
+        {
+          "path": "README.md",
+          "startLine": 142,
+          "endLine": 151
+        },
+        {
+          "path": "packages/core/tests/features.test.ts",
+          "startLine": 19,
+          "endLine": 28
+        }
+      ],
+      "valid": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "id": "dptrace-05",
+      "repo": "DPTrace",
+      "notFound": false,
+      "answer": "Repository evidence for your question:\n\n`imports` [src/algorithms/editDistance/meta.js:1-10]\n\n    export const meta = {\n      id: 'editDistance',\n      title: 'Edit Distance (Levenshtein)',\n      description: 'What\\'s the minimum number of single-character edits (insert, delete, replace) to turn one string into another? It\\'s the engine behind spell checkers and diff tools.',\n      category: '2D DP',\n      difficulty: 'Medium',\n      tags: ['string', '2D', 'transformation', 'Levenshtein'],\n      inputSchema: [\n        { key: 's1', label: 'Source String', type: 'string', maxLength: 7 },\n        { key: 's2', label: 'Target String', type: 'string', maxLength: 7 },\n\n`src/algorithms/editDistance/memoized.js` [src/algorithms/editDistance/memoized.js:21-30]\n\n    \n    export const code = `int editDist(const std::string& s1, const std::string& s2, int i, int j) {\n      if (memo[i][j] != -1) return memo[i][j];\n      if (i == 0) return memo[i][j] = j;\n      if (j == 0) return memo[i][j] = i;\n      \n      if (s1[i-1] == s2[j-1]) {\n        return memo[i][j] = editDist(s1, s2, i-1, j-1);\n      }\n      return memo[i][j] = 1 + std::min({\n\n`edit` [src/algorithms/editDistance/bruteForce.js:5-14]\n\n      function edit(i, j) {\n        if (steps.length >= STEP_CAP) return 0;\n        steps.push({ type: 'call', state: [i, j], value: null, lineNumber: 2, explanation: `edit(${i},${j}): distance to transform s1[0..${i-1}] into s2[0..${j-1}]` });\n        if (i === 0) { steps.push({ type: 'base_case', state: [i, j], value: j, lineNumber: 3, explanation: `s1 exhausted. Need ${j} insertions to build remaining s2.` }); return j; }\n        if (j === 0) { steps.push({ type: 'base_case', state: [i, j], value: i, lineNumber: 4, explanation: `s2 exhausted. Need ${i} deletions to empty s1.` }); return i; }\n        if (s1[i - 1] === s2[j - 1]) {\n          const val = edit(i - 1, j - 1);\n          steps.push({ type: 'return', state: [i, j], value: val, lineNumber: 7, explanation: `s1[${i-1}]=\"${s1[i-1]}\" == s2[${j-1}]=\"${s2[j-1]}\". No operation needed. edit(${i},${j}) = edit(${i-1},${j-1}) = ${val}` });\n          return val;\n        }",
+      "citations": [
+        {
+          "path": "src/algorithms/editDistance/meta.js",
+          "startLine": 1,
+          "endLine": 10
+        },
+        {
+          "path": "src/algorithms/editDistance/memoized.js",
+          "startLine": 21,
+          "endLine": 30
+        },
+        {
+          "path": "src/algorithms/editDistance/bruteForce.js",
+          "startLine": 5,
+          "endLine": 14
+        }
+      ],
+      "valid": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "id": "seekr-06",
+      "repo": "Seekr",
+      "notFound": false,
+      "answer": "Repository evidence for your question:\n\n`BM25, TF-IDF, and field boosts` [docs/DESIGN_DECISIONS.md:3-12]\n\n    ## BM25, TF-IDF, and field boosts\n    \n    BM25 defaults to `k1=1.2`, `b=0.75`: frequency saturates and body length is normalized.\n    Its smoothed IDF remains nonnegative. TF-IDF uses logarithmic frequency and smoothed\n    IDF, without length normalization. Both have tests with hand-calculated scores.\n    \n    BM25F normalizes title and body frequencies separately, weights the title, adds\n    that evidence, then saturates once. Document frequency is the union across enabled\n    fields. Weight zero reduces to body BM25, which a regression test verifies.\n    The small [Wikipedia evaluation](EVALUATION.md) found no title-boost gain, so the\n\n`Ranking` [README.md:142-151]\n\n    ### Ranking\n    \n    Body BM25 defaults to `k1=1.2`, `b=0.75`:\n    \n    ```text\n    IDF(t)     = ln(1 + (N - df(t) + 0.5) / (df(t) + 0.5))\n    score(d,q) = \u03a3 IDF(t) \u00d7 tf(t,d)(k1 + 1)\n                             / [tf(t,d) + k1(1 - b + b|d|/avgdl)]\n    ```\n    \n\n`packages/core/src/inverted-index.ts` [packages/core/src/inverted-index.ts:138-139]\n\n    \n    /** Document frequency: number of documents containing `term`. */",
+      "citations": [
+        {
+          "path": "docs/DESIGN_DECISIONS.md",
+          "startLine": 3,
+          "endLine": 12
+        },
+        {
+          "path": "README.md",
+          "startLine": 142,
+          "endLine": 151
+        },
+        {
+          "path": "packages/core/src/inverted-index.ts",
+          "startLine": 138,
+          "endLine": 139
+        }
+      ],
+      "valid": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "id": "codenest-13",
+      "repo": "CodeNest",
+      "notFound": false,
+      "answer": "Repository evidence for your question:\n\n`consumeRateLimit` [server/rate-limit.js:5-13]\n\n    async function consumeRateLimit(redis, key, limit, windowSeconds) {\n      const [count, ttl] = await redis.eval(WINDOW, 1, key, windowSeconds)\n      return {\n        allowed: Number(count) <= limit,\n        count: Number(count),\n        remaining: Math.max(0, limit - Number(count)),\n        retryAfter: Math.max(1, Number(ttl)),\n      }\n    }\n\n`anonymous` [tests/rate-limit.test.ts:4-13]\n\n    it('allows the limit, denies the next request and supplies a retry time', async () => {\n      let count = 0\n      const redis = { eval: vi.fn(async () => [++count, 60]) }\n      expect(await consumeRateLimit(redis, 'user:a', 2, 60)).toMatchObject({\n        allowed: true,\n        remaining: 1,\n      })\n      expect(await consumeRateLimit(redis, 'user:a', 2, 60)).toMatchObject({\n        allowed: true,\n        remaining: 0,\n\n`imports` [server/rate-limit.js:1-3]\n\n    const WINDOW = `local count = redis.call('INCR', KEYS[1])\n    if count == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end\n    return {count, redis.call('TTL', KEYS[1])}`",
+      "citations": [
+        {
+          "path": "server/rate-limit.js",
+          "startLine": 5,
+          "endLine": 13
+        },
+        {
+          "path": "tests/rate-limit.test.ts",
+          "startLine": 4,
+          "endLine": 13
+        },
+        {
+          "path": "server/rate-limit.js",
+          "startLine": 1,
+          "endLine": 3
+        }
+      ],
+      "valid": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "id": "seekr-03",
+      "repo": "Seekr",
+      "notFound": false,
+      "answer": "Repository evidence for your question:\n\n`imports` [apps/crawler/src/frontier.ts:1-10]\n\n    /**\n     * URL Frontier \u2013 Redis-backed per-domain URL queues with reliable-queue processing\n     *\n     * Design:\n     *   - Each domain gets its own Redis list: \"frontier:queue:<domain>\"\n     *   - A global sorted set \"frontier:domains\" tracks domains with pending URLs,\n     *     scored by their next-allowed-crawl timestamp (Unix ms).\n     *   - A Redis set \"frontier:seen\" holds all enqueued/crawled URL hashes to\n     *     prevent duplicates before fetching.\n     *   - A per-worker sorted set \"frontier:processing:<workerId>\" holds currently\n\n`bench/run.mjs` [bench/run.mjs:113-122]\n\n      lines.push(`| ${workers} | ${row?.pagesPerMin.toFixed(2) ?? tbd} | ${row?.fetched ?? tbd} |`);\n    }\n    lines.push(\n      '',\n      'The isolated fixture adds 20 ms response latency, uses zero domain delay, and prewarms MongoDB so both crawl runs encounter the same stored corpus. It counts fetched HTML including content duplicates, excludes robots skips and failures, and includes stop/drain time. This measures worker concurrency, not three independent crawler processes or Internet crawl throughput.',\n      '',\n      '## Ranking comparison',\n      '',\n      service?.comparison ??\n        `${tbd}. Real Wikipedia relevance metrics are in [EVALUATION.md](EVALUATION.md).`,\n\n`apps/crawler/src/frontier.ts` [apps/crawler/src/frontier.ts:142-146]\n\n    \n      /**\n       * Atomically dequeue the next URL from any eligible domain and add it\n       * to the worker's processing set. Returns null if no URL is currently available.\n       */",
+      "citations": [
+        {
+          "path": "apps/crawler/src/frontier.ts",
+          "startLine": 1,
+          "endLine": 10
+        },
+        {
+          "path": "bench/run.mjs",
+          "startLine": 113,
+          "endLine": 122
+        },
+        {
+          "path": "apps/crawler/src/frontier.ts",
+          "startLine": 142,
+          "endLine": 146
+        }
+      ],
+      "valid": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "id": "dptrace-13",
+      "repo": "DPTrace",
+      "notFound": false,
+      "answer": "Repository evidence for your question:\n\n`recordQuizScore` [src/algorithms/quizProgress.js:41-50]\n\n    export function recordQuizScore(stats, difficulty, correct, total) {\n      if (!QUIZ_LEVELS.includes(difficulty) || !Number.isInteger(total) || total <= 0 || !Number.isInteger(correct) || correct < 0 || correct > total) return stats;\n      const percent = Math.round(100 * correct / total);\n      const update = previous => ({\n        attempts: previous.attempts + 1,\n        bestScore: Math.max(previous.bestScore ?? 0, percent),\n        lastScore: percent,\n        correct: previous.correct + correct,\n        total: previous.total + total,\n      });\n\n`update` [src/algorithms/quizProgress.js:44-50]\n\n      const update = previous => ({\n        attempts: previous.attempts + 1,\n        bestScore: Math.max(previous.bestScore ?? 0, percent),\n        lastScore: percent,\n        correct: previous.correct + correct,\n        total: previous.total + total,\n      });\n\n`anonymous` [src/algorithms/quizProgress.js:7-9]\n\n        byDifficulty: Object.fromEntries(QUIZ_LEVELS.map(level => [level, {\n          attempts: 0, bestScore: null, lastScore: null, correct: 0, total: 0,\n        }])),",
+      "citations": [
+        {
+          "path": "src/algorithms/quizProgress.js",
+          "startLine": 41,
+          "endLine": 50
+        },
+        {
+          "path": "src/algorithms/quizProgress.js",
+          "startLine": 44,
+          "endLine": 50
+        },
+        {
+          "path": "src/algorithms/quizProgress.js",
+          "startLine": 7,
+          "endLine": 9
+        }
+      ],
+      "valid": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "id": "dptrace-06",
+      "repo": "DPTrace",
+      "notFound": false,
+      "answer": "Repository evidence for your question:\n\n`imports` [src/algorithms/lis/meta.js:1-10]\n\n    export const meta = {\n      id: 'lis',\n      title: 'Longest Increasing Subsequence',\n      description: 'Find the longest strictly increasing subsequence in an array. The numbers don\\'t have to be next to each other, they just have to go up.',\n      category: '1D DP',\n      difficulty: 'Medium',\n      tags: ['1D', 'binary search', 'patience sorting', 'subsequence'],\n      inputSchema: [\n        { key: 'arr', label: 'Array (comma-separated)', type: 'array', maxLength: 12 },\n      ],\n\n`imports` [src/algorithms/longestPalindromicSubsequence/meta.js:1-10]\n\n    export const meta = {\n      \"id\": \"longestPalindromicSubsequence\",\n      \"title\": \"Longest Palindromic Subsequence\",\n      \"description\": \"Find the longest subsequence that reads the same forwards and backwards.\",\n      \"category\": \"2D DP\",\n      \"difficulty\": \"Medium\",\n      \"tags\": [\n        \"palindrome\",\n        \"string\",\n        \"subsequence\"\n\n`spaceOptimized` [src/algorithms/index.js:208-208]\n\n        spaceOptimized: (input) => { validateInput(longestPalindromicSubsequenceMeta, input); return capped(longestPalindromicSubsequenceSO.run, input); },",
+      "citations": [
+        {
+          "path": "src/algorithms/lis/meta.js",
+          "startLine": 1,
+          "endLine": 10
+        },
+        {
+          "path": "src/algorithms/longestPalindromicSubsequence/meta.js",
+          "startLine": 1,
+          "endLine": 10
+        },
+        {
+          "path": "src/algorithms/index.js",
+          "startLine": 208,
+          "endLine": 208
+        }
+      ],
+      "valid": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "id": "dptrace-08",
+      "repo": "DPTrace",
+      "notFound": false,
+      "answer": "Repository evidence for your question:\n\n`imports` [src/algorithms/wordBreak/meta.js:1-10]\n\n    export const meta = {\n      \"id\": \"wordBreak\",\n      \"title\": \"Word Break\",\n      \"description\": \"Can the string be segmented into dictionary words? Words may be reused.\",\n      \"category\": \"1D DP\",\n      \"difficulty\": \"Medium\",\n      \"tags\": [\n        \"string\",\n        \"dictionary\",\n        \"boolean DP\"\n\n`src/algorithms/quizData.js` [src/algorithms/quizData.js:511-520]\n\n        \"difficulty\": \"Hard\",\n        \"q\": \"What bounds the history required by a rolling prefix DP?\",\n        \"options\": [\n          \"The shortest word length\",\n          \"The longest dictionary word length\",\n          \"The number of vowels\",\n          \"The input character codes\"\n        ],\n        \"a\": 1,\n        \"exp\": \"Every transition looks back at most the length of the longest dictionary word.\"\n\n`run` [src/algorithms/wordBreak/tabulation.js:2-11]\n\n    export function run({ s, dictionary }) {\n      const steps = [], words = parseDictionary(dictionary);\n      const dp = Array(s.length + 1).fill(false);\n      dp[0] = true;\n      record(steps, 'cell_fill', [0], true, 3, 'The empty prefix can be segmented.', dp);\n      for (let i = 1; i <= s.length; i++) {\n        for (const word of words) {\n          if (i >= word.length && dp[i - word.length] && s.slice(i - word.length, i) === word) dp[i] = true;\n          record(steps, 'compare', [i], dp[i], 7, 'Prefix length ' + i + ': try word \"' + word + '\"; segmentable=' + dp[i] + '.', dp);\n        }",
+      "citations": [
+        {
+          "path": "src/algorithms/wordBreak/meta.js",
+          "startLine": 1,
+          "endLine": 10
+        },
+        {
+          "path": "src/algorithms/quizData.js",
+          "startLine": 511,
+          "endLine": 520
+        },
+        {
+          "path": "src/algorithms/wordBreak/tabulation.js",
+          "startLine": 2,
+          "endLine": 11
+        }
+      ],
+      "valid": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "id": "dptrace-14",
+      "repo": "DPTrace",
+      "notFound": false,
+      "answer": "Repository evidence for your question:\n\n`saveQuizProgress` [src/algorithms/quizProgress.js:33-39]\n\n    export function saveQuizProgress(difficulty, stats) {\n      try {\n        localStorage.setItem(STORAGE_KEY, JSON.stringify({ difficulty, stats }));\n      } catch {\n        // Keep the in-memory quiz usable when storage is blocked or full.\n      }\n    }\n\n`loadQuizProgress` [src/algorithms/quizProgress.js:19-28]\n\n    export function loadQuizProgress() {\n      const fallback = { difficulty: 'Easy', stats: emptyQuizStats() };\n      try {\n        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));\n        if (!saved || !QUIZ_LEVELS.includes(saved.difficulty)) return fallback;\n        if (!validSummary(saved.stats) || !QUIZ_LEVELS.every(level => validSummary(saved.stats.byDifficulty?.[level]))) {\n          return { ...fallback, difficulty: saved.difficulty };\n        }\n        return { difficulty: saved.difficulty, stats: saved.stats };\n      } catch {\n\n`imports` [src/algorithms/quizProgress.js:1-2]\n\n    export const QUIZ_LEVELS = ['Easy', 'Medium', 'Hard'];\n    const STORAGE_KEY = 'dptrace-quiz';",
+      "citations": [
+        {
+          "path": "src/algorithms/quizProgress.js",
+          "startLine": 33,
+          "endLine": 39
+        },
+        {
+          "path": "src/algorithms/quizProgress.js",
+          "startLine": 19,
+          "endLine": 28
+        },
+        {
+          "path": "src/algorithms/quizProgress.js",
+          "startLine": 1,
+          "endLine": 2
+        }
+      ],
+      "valid": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "id": "codenest-02",
+      "repo": "CodeNest",
+      "notFound": false,
+      "answer": "Repository evidence for your question:\n\n`How it works` [README.md:49-57]\n\n    ## How it works\n    \n    1. Register or sign in with an email and password.\n    2. Create a room, configure its duration and hints, and optionally schedule it.\n    3. Share the invite link with the candidate, who signs in to join.\n    4. Select a problem and start the timer; the candidate writes code in the shared editor.\n    5. Run code with test inputs; the candidate can request hints while the interviewer can lock or control the editor.\n    6. Generate an AI review with a hire recommendation and end the interview.\n    7. Open the room replay from the dashboard to step through saved code snapshots and test results.\n\n`anonymous` [tests/socket.integration.test.ts:236-245]\n\n    it('allows same-identity reconnects and rejects invite reuse by another identity', async () => {\n      const owner = await join('owner')\n      const candidate = await join('candidate', room.inviteToken)\n      const left = event(owner.client, 'user-left')\n      candidate.client.disconnect()\n      await left\n      expect((await join('candidate', room.inviteToken)).state.myRole).toBe('candidate')\n      const stranger = clientIO(url, {\n        transports: ['websocket'],\n        reconnection: false,\n\n`anonymous` [tests/invites.test.ts:7-14]\n\n      it('binds tokens to a room, role, issuer and unique identity', () => {\n        const token = signInvite('abcd1234', secret)\n        expect(verifyInvite(token, secret, 'abcd1234')).toMatchObject({ role: 'candidate' })\n        expect(verifyInvite(token, secret, 'other123')).toBeNull()\n        expect(verifyInvite(signInvite('abcd1234', secret), secret)?.jti).not.toBe(\n          verifyInvite(token, secret)?.jti,\n        )\n      })",
+      "citations": [
+        {
+          "path": "README.md",
+          "startLine": 49,
+          "endLine": 57
+        },
+        {
+          "path": "tests/socket.integration.test.ts",
+          "startLine": 236,
+          "endLine": 245
+        },
+        {
+          "path": "tests/invites.test.ts",
+          "startLine": 7,
+          "endLine": 14
+        }
+      ],
+      "valid": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "id": "codenest-05",
+      "repo": "CodeNest",
+      "notFound": false,
+      "answer": "Repository evidence for your question:\n\n`restoreRoomState` [server/room-state.js:8-14]\n\n    function restoreRoomState(state, role, socketId) {\n      return {\n        ...state,\n        editorLockedBy:\n          role === 'interviewer' && state.editorLockedBy ? socketId : state.editorLockedBy,\n      }\n    }\n\n`src/components/room/InterviewerBar.tsx` [src/components/room/InterviewerBar.tsx:16-25]\n\n      editorLocked: boolean\n      controlledBy: 'interviewer' | 'candidate'\n      onLockEditor: () => void\n      onUnlockEditor: () => void\n      onTakeControl: () => void\n      onReturnControl: () => void\n      onChangeProblem: () => void\n      onEndInterview: () => void\n      timerStartedAt?: number\n      timerDurationMs?: number\n\n`anonymous` [tests/room-state.test.ts:3-12]\n\n    it('restores code, timer, problem and control while rebinding the interviewer lock', () => {\n      const state = {\n        code: 'solution',\n        timerStartedAt: 123,\n        timerDurationMs: 60000,\n        problemId: 'problem',\n        controlledBy: 'interviewer',\n        editorLockedBy: 'old-socket',\n      }\n      expect(restoreRoomState(state, 'interviewer', 'new-socket')).toEqual({",
+      "citations": [
+        {
+          "path": "server/room-state.js",
+          "startLine": 8,
+          "endLine": 14
+        },
+        {
+          "path": "src/components/room/InterviewerBar.tsx",
+          "startLine": 16,
+          "endLine": 25
+        },
+        {
+          "path": "tests/room-state.test.ts",
+          "startLine": 3,
+          "endLine": 12
+        }
+      ],
+      "valid": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "id": "seekr-01",
+      "repo": "Seekr",
+      "notFound": false,
+      "answer": "Repository evidence for your question:\n\n`imports` [apps/crawler/src/frontier.ts:1-10]\n\n    /**\n     * URL Frontier \u2013 Redis-backed per-domain URL queues with reliable-queue processing\n     *\n     * Design:\n     *   - Each domain gets its own Redis list: \"frontier:queue:<domain>\"\n     *   - A global sorted set \"frontier:domains\" tracks domains with pending URLs,\n     *     scored by their next-allowed-crawl timestamp (Unix ms).\n     *   - A Redis set \"frontier:seen\" holds all enqueued/crawled URL hashes to\n     *     prevent duplicates before fetching.\n     *   - A per-worker sorted set \"frontier:processing:<workerId>\" holds currently\n\n`anonymous` [frontend/src/test/seekr.test.ts:35-42]\n\n      it(\"rejects invalid seed URLs before starting the crawler\", () => {\n        expect(\n          validateCrawl({ seeds: [\"javascript:alert(1)\"], maxPages: 100, delayMs: 1000, workers: 4 }),\n        ).toBe(\"Seed URLs must start with http:// or https://.\");\n        expect(\n          validateCrawl({ seeds: [\"https://example.com\"], maxPages: 100, delayMs: 1000, workers: 4 }),\n        ).toBeNull();\n      });\n\n`apps/crawler/src/frontier.ts` [apps/crawler/src/frontier.ts:252-253]\n\n    \n      /** Total number of URLs waiting in all domain queues. */",
+      "citations": [
+        {
+          "path": "apps/crawler/src/frontier.ts",
+          "startLine": 1,
+          "endLine": 10
+        },
+        {
+          "path": "frontend/src/test/seekr.test.ts",
+          "startLine": 35,
+          "endLine": 42
+        },
+        {
+          "path": "apps/crawler/src/frontier.ts",
+          "startLine": 252,
+          "endLine": 253
+        }
+      ],
+      "valid": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "id": "dptrace-12",
+      "repo": "DPTrace",
+      "notFound": false,
+      "answer": "Repository evidence for your question:\n\n`generateQuizQuestions` [src/algorithms/quizGenerator.js:128-137]\n\n    export function generateQuizQuestions(problem, difficulty, seed = Date.now()) {\n      if (!registry[problem] || !QUIZ_LEVELS.includes(difficulty)) return [];\n      const random = seededRandom(seed);\n      const staticQuestions = shuffled(quizData[problem].filter(q => q.difficulty === difficulty), random).slice(0, 2);\n      const kinds = difficulty === 'Easy' ? ['answer']\n        : difficulty === 'Medium' ? ['table', 'answer', 'fills']\n        : ['cache', 'table', 'calls', 'answer'];\n      const generated = [];\n      const seen = new Set(staticQuestions.map(q => q.q));\n      // Bounded attempts handle tiny-input questions that happen to repeat.\n\n`anonymous` [src/components/features/QuizPage.jsx:17-17]\n\n      const questions = useMemo(() => generateQuizQuestions(selectedProblem, difficulty, seed), [selectedProblem, difficulty, seed]);\n\n`anonymous` [src/algorithms/quizGenerator.js:131-131]\n\n      const staticQuestions = shuffled(quizData[problem].filter(q => q.difficulty === difficulty), random).slice(0, 2);",
+      "citations": [
+        {
+          "path": "src/algorithms/quizGenerator.js",
+          "startLine": 128,
+          "endLine": 137
+        },
+        {
+          "path": "src/components/features/QuizPage.jsx",
+          "startLine": 17,
+          "endLine": 17
+        },
+        {
+          "path": "src/algorithms/quizGenerator.js",
+          "startLine": 131,
+          "endLine": 131
+        }
+      ],
+      "valid": [
+        true,
+        true,
+        true
+      ]
+    }
+  ]
+}

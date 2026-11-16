@@ -1,0 +1,15 @@
+{"id": "dptrace-01", "question": "How does memoized Fibonacci record a cache hit in its execution trace?", "relevant": [{"path": "src/algorithms/fibonacci/memoized.js", "symbol": "run"}], "reviewed": false}
+{"id": "dptrace-02", "question": "Why does the space-optimized 0/1 knapsack loop through capacities backwards?", "relevant": [{"path": "src/algorithms/knapsack/spaceOptimized.js", "symbol": "run"}], "reviewed": false}
+{"id": "dptrace-03", "question": "How does coin-change tabulation compute the minimum number of coins?", "relevant": [{"path": "src/algorithms/coinChange/tabulation.js", "symbol": "run"}], "reviewed": false}
+{"id": "dptrace-04", "question": "How is the longest common subsequence DP table filled?", "relevant": [{"path": "src/algorithms/lcs/tabulation.js", "symbol": "run"}], "reviewed": false}
+{"id": "dptrace-05", "question": "How does edit-distance memoization handle insertion, deletion and replacement?", "relevant": [{"path": "src/algorithms/editDistance/memoized.js", "symbol": "run"}], "reviewed": false}
+{"id": "dptrace-06", "question": "How is the longest increasing subsequence computed with reduced space?", "relevant": [{"path": "src/algorithms/lis/spaceOptimized.js", "symbol": "run"}], "reviewed": false}
+{"id": "dptrace-07", "question": "How does matrix-chain tabulation choose a split between matrix products?", "relevant": [{"path": "src/algorithms/mcm/tabulation.js", "symbol": "run"}], "reviewed": false}
+{"id": "dptrace-08", "question": "How does the word-break algorithm use a dictionary to fill its DP table?", "relevant": [{"path": "src/algorithms/wordBreak/tabulation.js", "symbol": "run"}], "reviewed": false}
+{"id": "dptrace-09", "question": "How does the grid-path algorithm handle obstacles?", "relevant": [{"path": "src/algorithms/gridPaths/tabulation.js", "symbol": "run"}], "reviewed": false}
+{"id": "dptrace-10", "question": "Where are user inputs bounded before expensive recursive approaches can run?", "relevant": [{"path": "src/algorithms/validateInput.js", "symbol": "validateInput"}], "reviewed": false}
+{"id": "dptrace-11", "question": "How is playback speed converted into an automatic step interval?", "relevant": [{"path": "src/hooks/usePlayback.js", "symbol": "usePlayback"}], "reviewed": false}
+{"id": "dptrace-12", "question": "How are trace-based quiz questions generated deterministically from a seed?", "relevant": [{"path": "src/algorithms/quizGenerator.js", "symbol": "generateQuizQuestions"}], "reviewed": false}
+{"id": "dptrace-13", "question": "How are quiz attempts and best scores updated for each difficulty?", "relevant": [{"path": "src/algorithms/quizProgress.js", "symbol": "recordQuizScore"}], "reviewed": false}
+{"id": "dptrace-14", "question": "How is malformed saved quiz progress handled when loading browser storage?", "relevant": [{"path": "src/algorithms/quizProgress.js", "symbol": "loadQuizProgress"}], "reviewed": false}
+{"id": "dptrace-15", "question": "How does the recurrence parser turn a custom recurrence into a trace?", "relevant": [{"path": "src/components/features/RecurrenceParser.jsx"}], "reviewed": false}

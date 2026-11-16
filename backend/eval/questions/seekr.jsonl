@@ -1,0 +1,15 @@
+{"id": "seekr-01", "question": "How does the crawl frontier atomically reject duplicate URLs before scheduling them?", "relevant": [{"path": "apps/crawler/src/frontier.ts", "symbol": "enqueue"}], "reviewed": false}
+{"id": "seekr-02", "question": "How does the crawler recover work abandoned by a crashed worker?", "relevant": [{"path": "apps/crawler/src/frontier.ts", "symbol": "reapStale"}], "reviewed": false}
+{"id": "seekr-03", "question": "How are per-domain crawl delays enforced when a worker dequeues a URL?", "relevant": [{"path": "apps/crawler/src/frontier.ts", "symbol": "dequeue"}], "reviewed": false}
+{"id": "seekr-04", "question": "Which checks prevent HTTP fetching from accessing private network addresses?", "relevant": [{"path": "apps/crawler/src/fetcher.ts", "symbol": "assertSafeUrl"}], "reviewed": false}
+{"id": "seekr-05", "question": "How are HTML text, title and outgoing links extracted from a downloaded page?", "relevant": [{"path": "apps/crawler/src/parser.ts", "symbol": "parseHtml"}], "reviewed": false}
+{"id": "seekr-06", "question": "How does BM25 combine inverse document frequency, term saturation and document length?", "relevant": [{"path": "packages/core/src/ranker.ts", "symbol": "scoreBM25"}], "reviewed": false}
+{"id": "seekr-07", "question": "How is title weighting combined with body term frequency in BM25F?", "relevant": [{"path": "packages/core/src/ranker.ts", "symbol": "scoreBM25F"}], "reviewed": false}
+{"id": "seekr-08", "question": "How are quoted phrases and OR clauses parsed from a search query?", "relevant": [{"path": "packages/core/src/query-parser.ts", "symbol": "parseQuery"}], "reviewed": false}
+{"id": "seekr-09", "question": "How does autocomplete rank and cache completions for a prefix?", "relevant": [{"path": "packages/core/src/trie.ts"}], "reviewed": false}
+{"id": "seekr-10", "question": "How is an inverted index encoded into a checksummed binary snapshot?", "relevant": [{"path": "packages/core/src/serializer.ts", "symbol": "encodeIndex"}], "reviewed": false}
+{"id": "seekr-11", "question": "What validation happens while a binary index snapshot is decoded?", "relevant": [{"path": "packages/core/src/serializer.ts", "symbol": "decodeIndex"}], "reviewed": false}
+{"id": "seekr-12", "question": "How are documents removed from the positional inverted index?", "relevant": [{"path": "packages/core/src/inverted-index.ts", "symbol": "removeDocument"}], "reviewed": false}
+{"id": "seekr-13", "question": "How are misspelled query terms converted into spelling suggestions?", "relevant": [{"path": "packages/core/src/typo.ts", "symbol": "didYouMean"}], "reviewed": false}
+{"id": "seekr-14", "question": "How does the snippet generator choose a window around query terms?", "relevant": [{"path": "packages/core/src/snippet.ts", "symbol": "generateSnippet"}], "reviewed": false}
+{"id": "seekr-15", "question": "How is SimHash used to represent a document for near-duplicate detection?", "relevant": [{"path": "packages/core/src/simhash.ts", "symbol": "simHash"}], "reviewed": false}
