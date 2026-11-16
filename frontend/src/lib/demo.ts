@@ -9,14 +9,14 @@ export const demos = [
   },
   {
     name: "CodeNest",
-    description: "Explore how a codebase fits together.",
-    language: "Python",
+    description: "Collaborative coding interviews, explained.",
+    language: "TypeScript",
     icon: "code",
   },
   {
     name: "DPTrace",
-    description: "Follow an algorithm, step by step.",
-    language: "TypeScript",
+    description: "Dynamic programming, step by step.",
+    language: "JavaScript",
     icon: "layers",
   },
 ];

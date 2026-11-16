@@ -34,7 +34,13 @@ export function Indexing({
         <GitBranch size={27} />
       </span>
       <p className="eyebrow">BUILDING YOUR KNOWLEDGE BASE</p>
-      <h1>{failed ? "We couldn’t index this repository." : "Getting to know your code."}</h1>
+      <h1>
+        {failed
+          ? "We couldn’t index this repository."
+          : job?.queued
+            ? "Waiting for the indexing worker."
+            : "Getting to know your code."}
+      </h1>
       <p className="muted mono">{url.replace("https://github.com/", "")}</p>
       <div
         className="index-progress"

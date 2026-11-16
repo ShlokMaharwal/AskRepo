@@ -10,14 +10,18 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 
-export type SearchSettings = { hybrid: boolean; rerank: boolean; topK: number };
+export type SearchSettings = { hybrid: boolean; rerank: boolean; topK: number; agentic: boolean };
 
 export function SearchSettingsDialog({
   value,
   onChange,
+  rerankerAvailable = true,
+  agenticAvailable = true,
 }: {
   value: SearchSettings;
   onChange: (value: SearchSettings) => void;
+  rerankerAvailable?: boolean;
+  agenticAvailable?: boolean;
 }) {
   return (
     <Dialog>
@@ -45,12 +49,33 @@ export function SearchSettingsDialog({
         <div className="setting-row">
           <label htmlFor="rerank-search">
             <strong>Reranker</strong>
-            <span>Reorder results by relevance to your question.</span>
+            <span>
+              {rerankerAvailable
+                ? "Reorder results by relevance to your question."
+                : "Reranking is unavailable on this server."}
+            </span>
           </label>
           <Switch
             id="rerank-search"
             checked={value.rerank}
+            disabled={!rerankerAvailable}
             onCheckedChange={(rerank) => onChange({ ...value, rerank })}
+          />
+        </div>
+        <div className="setting-row">
+          <label htmlFor="agentic-search">
+            <strong>Agentic retrieval</strong>
+            <span>
+              {agenticAvailable
+                ? "Opt in to one retry when the evidence is weak."
+                : "Agentic retrieval is disabled on this server."}
+            </span>
+          </label>
+          <Switch
+            id="agentic-search"
+            checked={value.agentic}
+            disabled={!agenticAvailable}
+            onCheckedChange={(agentic) => onChange({ ...value, agentic })}
           />
         </div>
         <div className="setting-slider">

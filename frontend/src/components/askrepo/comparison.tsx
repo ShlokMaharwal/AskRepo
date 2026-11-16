@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { api, type Citation } from "@/api";
+import { api, useMock, type Citation } from "@/api";
 
 export function RetrievalComparison({
   repoId,
@@ -29,14 +29,21 @@ export function RetrievalComparison({
         <div key={method}>
           <strong>{method.toUpperCase()}</strong>
           {result.data[method].map((chunk) => (
-            <button key={chunk.path} onClick={() => onCitation(chunk)}>
+            <button
+              key={`${chunk.path}:${chunk.startLine}-${chunk.endLine}`}
+              onClick={() => onCitation(chunk)}
+            >
               {chunk.path.split("/").at(-1)}
               <span>{Math.round(chunk.score * 100)}%</span>
             </button>
           ))}
         </div>
       ))}
-      <p className="comparison-note">Illustrative retrieval rankings for this question.</p>
+      <p className="comparison-note">
+        {useMock || repoId.startsWith("demo:")
+          ? "Illustrative retrieval rankings for this question."
+          : "Independent BM25, vector, and hybrid retrieval for this question."}
+      </p>
     </div>
   );
 }

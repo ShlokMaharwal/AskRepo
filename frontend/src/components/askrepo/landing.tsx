@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { demos } from "@/lib/demo";
+import { useMock } from "@/api";
 
 export function Landing({
   onIndex,
@@ -108,7 +109,11 @@ export function Landing({
             );
           })}
         </div>
-        <p className="demo-disclaimer">Interactive examples use illustrative search-engine data.</p>
+        <p className="demo-disclaimer">
+          {useMock
+            ? "Interactive examples use illustrative search-engine data."
+            : "Pre-indexed demos open instantly. New repositories are indexed on first use."}
+        </p>
       </div>
       <div className="feature-strip">
         <div>
