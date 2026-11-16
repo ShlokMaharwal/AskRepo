@@ -18,13 +18,23 @@ import {
   Search,
   ShieldCheck,
   Sun,
+  Square,
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { z } from "zod";
-import { api, useMock, type Citation, type JobStatus, type Repo } from "@/api";
+import {
+  api,
+  useMock,
+  type Answer,
+  type AnswerStreamEvent,
+  type Citation,
+  type JobStatus,
+  type Repo,
+} from "@/api";
 import { demoFiles, demoRepo } from "@/lib/demo";
 import { migrateStorage } from "@/lib/storage";
+import { requestHistory } from "@/lib/chat-history";
 import {
   Dialog,
   DialogContent,
@@ -56,6 +66,8 @@ const sessionSchema = z.object({
       id: z.string(),
       question: z.string(),
       error: z.string().optional(),
+      streaming: z.boolean().optional(),
+      stopped: z.boolean().optional(),
       response: z
         .object({
           answer: z.string(),
@@ -69,6 +81,15 @@ const sessionSchema = z.object({
           ),
           notFound: z.boolean(),
           latencyMs: z.object({ retrieve: z.number(), rerank: z.number(), generate: z.number() }),
+          generationMode: z.string().optional(),
+          rerankApplied: z.boolean().optional(),
+          llmCalls: z.number().optional(),
+          rewrittenQuestion: z.string().nullable().optional(),
+          rewriteMode: z.string().optional(),
+          agenticUsed: z.boolean().optional(),
+          retried: z.boolean().optional(),
+          totalMs: z.number().optional(),
+          cached: z.boolean().optional(),
         })
         .optional(),
     }),
@@ -87,7 +108,12 @@ export function Workspace() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [theme, setTheme] = useState("dark");
-  const [settings, setSettings] = useState<SearchSettings>({ hybrid: true, rerank: true, topK: 8 });
+  const [settings, setSettings] = useState<SearchSettings>({
+    hybrid: true,
+    rerank: true,
+    topK: 8,
+    agentic: false,
+  });
   const [citation, setCitation] = useState<Citation | null>(null);
   const [codeOpen, setCodeOpen] = useState(true);
   const [mobileTab, setMobileTab] = useState("chat");
@@ -97,7 +123,7 @@ export function Workspace() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [pendingId, setPendingId] = useState<string | null>(null);
-  const [freshId, setFreshId] = useState<string | null>(null);
+  const activeRequest = useRef<AbortController | null>(null);
   const [indexJob, setIndexJob] = useState<{
     jobId: string;
     repoId: string;
@@ -115,6 +141,12 @@ export function Workspace() {
   const currentSession = sessions.find((session) => session.id === sessionId);
   const messages = currentSession?.messages ?? [];
   const isDemo = Boolean(repo?.repoId.startsWith("demo:"));
+  const files = useQuery({
+    queryKey: ["files", repo?.repoId],
+    queryFn: () => api.files(repo!.repoId),
+    enabled: Boolean(repo),
+    retry: false,
+  });
 
   useEffect(() => {
     try {
@@ -129,12 +161,14 @@ export function Workspace() {
             .map((session) => ({
               ...session,
               messages: session.messages.map((message) =>
-                message.response || message.error
-                  ? message
-                  : {
-                      ...message,
-                      error: "This answer was interrupted. Send the question again to retry.",
-                    },
+                message.streaming
+                  ? { ...message, streaming: false, stopped: true }
+                  : message.response || message.error
+                    ? message
+                    : {
+                        ...message,
+                        error: "This answer was interrupted. Send the question again to retry.",
+                      },
               ),
             })),
         );
@@ -144,7 +178,12 @@ export function Workspace() {
       if (savedSettings)
         setSettings(
           z
-            .object({ hybrid: z.boolean(), rerank: z.boolean(), topK: z.number().min(3).max(20) })
+            .object({
+              hybrid: z.boolean(),
+              rerank: z.boolean(),
+              topK: z.number().min(3).max(20),
+              agentic: z.boolean().default(false),
+            })
             .parse(JSON.parse(savedSettings)),
         );
     } catch {
@@ -163,13 +202,22 @@ export function Workspace() {
   }, [theme, hydrated]);
   useEffect(() => {
     if (!hydrated) return;
-    try {
-      localStorage.setItem("askrepo:history", JSON.stringify(sessions.slice(0, 20)));
-      localStorage.setItem("askrepo:settings", JSON.stringify(settings));
-    } catch {
-      /* Quota limits must not interrupt chat. */
+    function save() {
+      try {
+        localStorage.setItem("askrepo:history", JSON.stringify(sessions.slice(0, 20)));
+        localStorage.setItem("askrepo:settings", JSON.stringify(settings));
+      } catch {
+        /* Quota limits must not interrupt chat. */
+      }
     }
+    if (!sessions.some((session) => session.messages.some((message) => message.streaming))) {
+      save();
+      return;
+    }
+    const timer = setTimeout(save, 500);
+    return () => clearTimeout(timer);
   }, [sessions, settings, hydrated]);
+  useEffect(() => () => activeRequest.current?.abort(), []);
   useEffect(() => {
     function shortcut(event: KeyboardEvent) {
       if ((event.metaKey || event.ctrlKey) && event.key === "k") {
@@ -213,6 +261,7 @@ export function Workspace() {
   }, [indexJob, view, queryClient]);
 
   function openRepo(nextRepo: Repo) {
+    activeRequest.current?.abort();
     setRepo(nextRepo);
     setView("chat");
     setSessionId(null);
@@ -224,6 +273,7 @@ export function Workspace() {
     setMobileTab("chat");
   }
   function home() {
+    activeRequest.current?.abort();
     setView("landing");
     setError("");
     setRepo(null);
@@ -231,11 +281,11 @@ export function Workspace() {
     setSidebarOpen(false);
   }
   function openSession(session: Session) {
+    activeRequest.current?.abort();
     setRepo(session.repo);
     setSessionId(session.id);
     setView("chat");
     setCitation(null);
-    setFreshId(null);
     setSidebarOpen(false);
     setMobileTab("chat");
   }
@@ -253,11 +303,39 @@ export function Workspace() {
       setBusy(false);
     }
   }
+  async function openDemo(name: string) {
+    if (useMock) {
+      openRepo(demoRepo(name));
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const target = `https://github.com/ShlokMaharwal/${name}`;
+      const available = await queryClient.fetchQuery({
+        queryKey: ["repos"],
+        queryFn: api.repos,
+        staleTime: 0,
+        retry: false,
+      });
+      const existing = available.find(
+        (item) => item.repoUrl.toLowerCase() === target.toLowerCase(),
+      );
+      if (existing) openRepo(existing);
+      else await index(target);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Unable to open this repository.");
+    } finally {
+      setBusy(false);
+    }
+  }
   async function ask(text: string) {
     if (!repo || !text.trim() || text.trim().length > 500 || pendingId) return;
     const id = uid();
     const activeSessionId = sessionId ?? uid();
-    const message: Message = { id, question: text.trim() };
+    const message: Message = { id, question: text.trim(), streaming: true };
+    const controller = new AbortController();
+    activeRequest.current = controller;
     if (!sessionId) {
       setSessions((previous) =>
         [
@@ -276,20 +354,75 @@ export function Workspace() {
       );
     setQuestion("");
     setPendingId(id);
-    setFreshId(id);
-    try {
-      const response = await api.ask({
-        repoId: repo.repoId,
-        question: message.question,
-        ...settings,
+    function updateMessage(change: (item: Message) => Message) {
+      setSessions((previous) =>
+        previous.map((session) =>
+          session.id === activeSessionId
+            ? {
+                ...session,
+                messages: session.messages.map((item) => (item.id === id ? change(item) : item)),
+              }
+            : session,
+        ),
+      );
+    }
+    const empty: Answer = {
+      answer: "",
+      chunks: [],
+      citations: [],
+      notFound: false,
+      latencyMs: { retrieve: 0, rerank: 0, generate: 0 },
+    };
+    function onEvent(event: AnswerStreamEvent) {
+      if (controller.signal.aborted) return;
+      updateMessage((item) => {
+        const response = item.response ?? empty;
+        switch (event.event) {
+          case "status":
+            return { ...item, status: event.data.message };
+          case "chunks":
+            return { ...item, response: { ...response, chunks: event.data } };
+          case "token":
+            return {
+              ...item,
+              response: { ...response, answer: response.answer + event.data.text },
+            };
+          case "answer_clean":
+            return { ...item, response: { ...response, answer: event.data.answer } };
+          case "citations":
+            return { ...item, response: { ...response, citations: event.data } };
+          case "done":
+            return {
+              ...item,
+              streaming: false,
+              status: "",
+              response: { ...response, ...event.data },
+            };
+          default:
+            return item;
+        }
       });
+    }
+    try {
+      const response = await api.askStream(
+        {
+          repoId: repo.repoId,
+          question: message.question,
+          history: requestHistory(messages),
+          ...settings,
+          rerank: settings.rerank && !health.data?.liteMode,
+          agentic: settings.agentic && health.data?.agenticEnabled !== false,
+        },
+        onEvent,
+        controller.signal,
+      );
       setSessions((previous) =>
         previous.map((session) =>
           session.id === activeSessionId
             ? {
                 ...session,
                 messages: session.messages.map((item) =>
-                  item.id === id ? { ...item, response } : item,
+                  item.id === id ? { ...item, response, streaming: false, status: "" } : item,
                 ),
               }
             : session,
@@ -305,8 +438,12 @@ export function Workspace() {
                   item.id === id
                     ? {
                         ...item,
-                        error:
-                          reason instanceof Error
+                        streaming: false,
+                        stopped: controller.signal.aborted,
+                        status: "",
+                        error: controller.signal.aborted
+                          ? undefined
+                          : reason instanceof Error
                             ? reason.message
                             : "Could not answer this question.",
                       }
@@ -317,7 +454,10 @@ export function Workspace() {
         ),
       );
     } finally {
-      setPendingId(null);
+      if (activeRequest.current === controller) {
+        activeRequest.current = null;
+        setPendingId(null);
+      }
     }
   }
   function showCitation(value: Citation) {
@@ -329,13 +469,17 @@ export function Workspace() {
     event.preventDefault();
     void ask(question);
   }
-  const paths = isDemo
-    ? Object.keys(demoFiles)
-    : [
-        ...new Set(
-          messages.flatMap((message) => message.response?.chunks.map((chunk) => chunk.path) ?? []),
-        ),
-      ];
+  const paths =
+    files.data?.map((file) => file.path) ??
+    (isDemo
+      ? Object.keys(demoFiles)
+      : [
+          ...new Set(
+            messages.flatMap(
+              (message) => message.response?.chunks.map((chunk) => chunk.path) ?? [],
+            ),
+          ),
+        ]);
 
   return (
     <div className="askrepo-app" data-ready={hydrated}>
@@ -508,7 +652,7 @@ export function Workspace() {
           <div className="landing-scroll">
             <Landing
               onIndex={(url) => void index(url)}
-              onDemo={(name) => openRepo(demoRepo(name))}
+              onDemo={(name) => void openDemo(name)}
               busy={busy || !hydrated}
               error={error}
             />
@@ -524,13 +668,22 @@ export function Workspace() {
                 <div>
                   <GitBranch size={14} />
                   <strong>{repoName(repo)}</strong>
-                  <span className="branch-badge">main</span>
+                  <span className="branch-badge">snapshot</span>
                 </div>
                 <div>
                   <button className="text-button" onClick={() => openRepo(repo)}>
                     <Plus size={13} /> New chat
                   </button>
-                  <SearchSettingsDialog value={settings} onChange={setSettings} />
+                  <SearchSettingsDialog
+                    value={{
+                      ...settings,
+                      rerank: settings.rerank && !health.data?.liteMode,
+                      agentic: settings.agentic && health.data?.agenticEnabled !== false,
+                    }}
+                    onChange={setSettings}
+                    rerankerAvailable={!health.data?.liteMode}
+                    agenticAvailable={health.data?.agenticEnabled !== false}
+                  />
                   <button
                     className="icon-button"
                     aria-label="Toggle source explorer"
@@ -579,7 +732,6 @@ export function Workspace() {
                       pending={Boolean(pendingId)}
                       onAsk={(value) => void ask(value)}
                       onCitation={showCitation}
-                      freshId={freshId}
                     />
                   </div>
                   <div className="composer-area">
@@ -608,22 +760,32 @@ export function Workspace() {
                           <Search size={12} />
                           {settings.hybrid ? "Hybrid search" : "Keyword search"}
                           <span>·</span>
-                          {settings.rerank ? "Reranker on" : "Reranker off"}
+                          {settings.rerank && !health.data?.liteMode
+                            ? "Reranker on"
+                            : "Reranker off"}
                         </span>
                         <div>
                           <span className="character-count">{question.length}/500</span>
-                          <button
-                            className="send-button"
-                            type="submit"
-                            disabled={!question.trim() || Boolean(pendingId)}
-                            aria-label="Send question"
-                          >
-                            {pendingId ? (
-                              <Loader2 size={16} className="spin" />
-                            ) : (
+                          {pendingId ? (
+                            <button
+                              className="send-button"
+                              type="button"
+                              onClick={() => activeRequest.current?.abort()}
+                              aria-label="Stop response"
+                              title="Stop response"
+                            >
+                              <Square size={14} fill="currentColor" />
+                            </button>
+                          ) : (
+                            <button
+                              className="send-button"
+                              type="submit"
+                              disabled={!question.trim() || Boolean(pendingId)}
+                              aria-label="Send question"
+                            >
                               <ArrowUp size={17} />
-                            )}
-                          </button>
+                            </button>
+                          )}
                         </div>
                       </div>
                     </form>
@@ -747,8 +909,8 @@ export function Workspace() {
                 </div>
               </div>
               <p className="muted small">
-                Demo workspaces use illustrative fixtures. Chat history is saved only in this
-                browser. Clear this site’s storage to remove it.
+                Demo cards connect to the public repositories. Mock mode uses labeled fixtures. Chat
+                history is saved only in this browser. Clear this site’s storage to remove it.
               </p>
             </div>
           )}

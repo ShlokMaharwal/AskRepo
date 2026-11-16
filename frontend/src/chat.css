@@ -942,3 +942,8 @@
   border-radius: 5px;
   animation: breathe 1.5s infinite;
 }
+.stream-status {
+  color: var(--text-secondary);
+  font-size: 11px;
+  margin: 0 0 12px;
+}

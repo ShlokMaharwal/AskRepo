@@ -21,6 +21,9 @@ export type Message = {
   question: string;
   response?: Answer | undefined;
   error?: string | undefined;
+  streaming?: boolean | undefined;
+  stopped?: boolean | undefined;
+  status?: string | undefined;
 };
 
 function CopyButton({
@@ -76,39 +79,46 @@ function CodeBlock({ children }: { children?: ReactNode }) {
 function AssistantAnswer({
   answer,
   onCitation,
-  animate,
+  streaming,
+  stopped,
+  failed,
+  status,
   repoId,
   question,
 }: {
   answer: Answer;
   onCitation: (citation: Citation) => void;
-  animate: boolean;
+  streaming: boolean;
+  stopped: boolean;
+  failed: boolean;
+  status?: string | undefined;
   repoId: string;
   question: string;
 }) {
-  const [visible, setVisible] = useState(animate ? 0 : answer.answer.length);
   const [vote, setVote] = useState<"up" | "down" | null>(null);
   const [compare, setCompare] = useState(false);
-  useEffect(() => {
-    if (!animate) {
-      setVisible(answer.answer.length);
-      return;
-    }
-    const timer = setInterval(
-      () =>
-        setVisible((count) => {
-          const next = Math.min(answer.answer.length, count + 24);
-          if (next === answer.answer.length) clearInterval(timer);
-          return next;
-        }),
-      16,
-    );
-    return () => clearInterval(timer);
-  }, [answer.answer, animate]);
-  const complete = visible >= answer.answer.length;
-  const text = answer.answer.slice(0, visible).replace(/\[([^\]\n]+):\d+-\d+\]/g, "");
+  const complete = !streaming && !stopped && !failed;
+  const sources = complete ? answer.citations : answer.chunks;
+  const text = answer.answer
+    .replace(/\[([^\]\n]+):\d+-\d+\]/g, "")
+    .replace(/\[[^\]\n]*:\d*(?:-\d*)?$/, "");
   return (
     <div className="assistant-answer">
+      {answer.rewrittenQuestion && answer.rewrittenQuestion !== question && (
+        <p className="stream-status">
+          Searching for: <span className="mono">{answer.rewrittenQuestion}</span>
+        </p>
+      )}
+      {streaming && (
+        <p className="stream-status" role="status">
+          {status ?? "Receiving answer"}
+        </p>
+      )}
+      {stopped && (
+        <p className="stream-status" role="status">
+          Stopped · Partial response; citations were not validated.
+        </p>
+      )}
       {answer.notFound && (
         <div className="not-found">
           <TriangleAlert size={17} />
@@ -119,6 +129,7 @@ function AssistantAnswer({
         <Markdown
           components={{
             pre: CodeBlock,
+            img: () => null,
             a: ({ href, children }) => (
               <a
                 href={href && /^https?:\/\//.test(href) ? href : undefined}
@@ -132,15 +143,15 @@ function AssistantAnswer({
         >
           {text}
         </Markdown>
-        {!complete && <span className="typing-cursor" />}
+        {streaming && <span className="typing-cursor" />}
       </div>
-      {complete && (
+      {
         <>
-          {answer.citations.length > 0 && (
+          {sources.length > 0 && (
             <div className="citation-section">
-              <span className="eyebrow">SOURCES</span>
+              <span className="eyebrow">{complete ? "SOURCES" : "RETRIEVED SOURCES"}</span>
               <div className="citation-chips">
-                {answer.citations.map((citation) => (
+                {sources.map((citation) => (
                   <button
                     className="citation-chip"
                     key={`${citation.path}:${citation.startLine}`}
@@ -198,41 +209,50 @@ function AssistantAnswer({
                 {compare && (
                   <RetrievalComparison
                     repoId={repoId}
-                    question={question}
+                    question={answer.rewrittenQuestion ?? question}
                     onCitation={onCitation}
                   />
                 )}
               </div>
             </details>
           )}
-          <div className="answer-actions">
-            <CopyButton text={answer.answer} />
-            <span className="action-divider" />
-            <button
-              className={`icon-button ${vote === "up" ? "selected" : ""}`}
-              aria-label="Helpful answer"
-              aria-pressed={vote === "up"}
-              onClick={() => setVote(vote === "up" ? null : "up")}
-            >
-              <ThumbsUp size={14} />
-            </button>
-            <button
-              className={`icon-button ${vote === "down" ? "selected" : ""}`}
-              aria-label="Unhelpful answer"
-              aria-pressed={vote === "down"}
-              onClick={() => setVote(vote === "down" ? null : "down")}
-            >
-              <ThumbsDown size={14} />
-            </button>
-            <span className="answer-latency">
-              {Math.round(
-                answer.latencyMs.retrieve + answer.latencyMs.rerank + answer.latencyMs.generate,
-              )}{" "}
-              ms <span>·</span> {answer.citations.length} sources
-            </span>
-          </div>
+          {complete && (
+            <div className="answer-actions">
+              {answer.cached && <span className="subtle-badge">CACHED</span>}
+              {answer.generationMode === "extractive" && (
+                <span className="subtle-badge" title="Direct excerpts from the repository">
+                  SOURCE EXCERPTS
+                </span>
+              )}
+              <CopyButton text={answer.answer} />
+              <span className="action-divider" />
+              <button
+                className={`icon-button ${vote === "up" ? "selected" : ""}`}
+                aria-label="Helpful answer"
+                aria-pressed={vote === "up"}
+                onClick={() => setVote(vote === "up" ? null : "up")}
+              >
+                <ThumbsUp size={14} />
+              </button>
+              <button
+                className={`icon-button ${vote === "down" ? "selected" : ""}`}
+                aria-label="Unhelpful answer"
+                aria-pressed={vote === "down"}
+                onClick={() => setVote(vote === "down" ? null : "down")}
+              >
+                <ThumbsDown size={14} />
+              </button>
+              <span className="answer-latency">
+                {Math.round(
+                  answer.totalMs ??
+                    answer.latencyMs.retrieve + answer.latencyMs.rerank + answer.latencyMs.generate,
+                )}{" "}
+                ms <span>·</span> {answer.citations.length} sources
+              </span>
+            </div>
+          )}
         </>
-      )}
+      }
     </div>
   );
 }
@@ -243,7 +263,6 @@ export function Conversation({
   pending,
   onAsk,
   onCitation,
-  freshId,
   repoId,
 }: {
   messages: Message[];
@@ -251,13 +270,13 @@ export function Conversation({
   pending: boolean;
   onAsk: (question: string) => void;
   onCitation: (citation: Citation) => void;
-  freshId: string | null;
   repoId: string;
 }) {
   const end = useRef<HTMLDivElement>(null);
+  const answerLength = messages.at(-1)?.response?.answer.length;
   useEffect(() => {
     end.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages.length, pending]);
+  }, [messages.length, pending, answerLength]);
   if (!messages.length)
     return (
       <div className="chat-welcome">
@@ -272,11 +291,30 @@ export function Conversation({
           Understand how everything connects.
         </p>
         <div className="suggested-questions">
-          {[
-            "How does the URL frontier avoid crawling duplicate pages?",
-            "How are search results ranked with BM25?",
-            "How is the index persisted between restarts?",
-          ].map((question, index) => (
+          {(repoName.toLowerCase() === "seekr"
+            ? [
+                "How does the URL frontier avoid crawling duplicate pages?",
+                "How are search results ranked with BM25?",
+                "How is the index persisted between restarts?",
+              ]
+            : repoName.toLowerCase() === "codenest"
+              ? [
+                  "How are interview invitation tokens verified?",
+                  "How does editor control enforce interviewer and candidate roles?",
+                  "How are AI hint limits enforced?",
+                ]
+              : repoName.toLowerCase() === "dptrace"
+                ? [
+                    "How does memoized Fibonacci record cache hits?",
+                    "How does playback speed control the execution trace?",
+                    "How are user inputs validated before running an algorithm?",
+                  ]
+                : [
+                    "Where is the application's entry point?",
+                    "How does the main request flow work?",
+                    "How is configuration loaded?",
+                  ]
+          ).map((question, index) => (
             <button key={question} onClick={() => onAsk(question)}>
               <span className="suggestion-index">0{index + 1}</span>
               <span>{question}</span>
@@ -310,8 +348,13 @@ export function Conversation({
                   question={message.question}
                   answer={message.response}
                   onCitation={onCitation}
-                  animate={message.id === freshId}
+                  streaming={Boolean(message.streaming)}
+                  stopped={Boolean(message.stopped)}
+                  failed={Boolean(message.error)}
+                  status={message.status}
                 />
+              ) : message.stopped ? (
+                <p className="stream-status">Response stopped.</p>
               ) : message.error ? (
                 <div className="error-notice" role="alert">
                   {message.error}
@@ -321,7 +364,14 @@ export function Conversation({
                   <span />
                   <span />
                   <span />
-                  <span className="thinking-label">Searching your repository</span>
+                  <span className="thinking-label">
+                    {message.status ?? "Searching your repository"}
+                  </span>
+                </div>
+              )}
+              {message.response && message.error && (
+                <div className="error-notice" role="alert">
+                  {message.error}
                 </div>
               )}
             </div>
