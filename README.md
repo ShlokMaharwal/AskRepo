@@ -6,6 +6,11 @@ Ask questions about a GitHub codebase and get answers with exact file and line c
 
 **[Open the live app](https://askrepo-murex.vercel.app/)** · [API docs](https://askrepo-api.onrender.com/docs) · [API health](https://askrepo-api.onrender.com/health)
 
+> **Deployment status — November 17, 2026:** the frontend and API are reachable,
+> but demo indexing is blocked by the project's daily Gemini embedding quota.
+> Live cited answers, streaming and Render restart recovery remain unverified
+> until indexing finishes. See [actual checks and next steps](docs/DEPLOY.md#last-verified).
+
 > **Screenshot/GIF placeholder:** record a real streamed answer and citation click.
 > Follow [the exact capture instructions](docs/RECORDING.md), then add the recorded asset here.
 
@@ -26,8 +31,9 @@ The public app uses **Vercel + Render Free + Qdrant Cloud + Gemini**. Render run
 Docker in lite mode, with Gemini embeddings and generation and no local reranker.
 The [deployment guide](docs/DEPLOY.md) and [render.yaml](render.yaml) describe the
 reproducible configuration, including demo bootstrap, indexing restrictions and
-proxy-aware rate limiting. Source code and local checks alone do not prove that
-new settings are active on the hosted service; see the guide's Last verified entry.
+proxy-aware rate limiting. Live checks confirmed bootstrap and allowlist mode,
+correct frontend CORS, and a 403 response for arbitrary repository indexing.
+The end-to-end smoke check stopped because the demos were not ready.
 
 Free hosting can sleep and cold starts can take about a minute. The UI retries
 health checks and shows readiness rather than a blank page. Render disk is
@@ -45,7 +51,7 @@ Provider reset delays are respected. Browser chat history can outlive a lost sna
 | Vectors | Local Qdrant or configured cloud | Qdrant Cloud |
 | Generation | Gemini when configured; source excerpts without a key | Gemini; deployment overrides currently select `gemini-3.5-flash-lite` |
 | Storage | Local directory or Docker volume | Ephemeral Render files; bootstrap is required for recovery |
-| Public indexing | Open by default | Blueprint recommends demo allowlist |
+| Public indexing | Open by default | Demo allowlist enabled |
 | Evaluation applicability | Historical BGE CPU results | Requires the separate deployed-lite profile |
 
 ## Run locally
@@ -65,6 +71,24 @@ again. Open [localhost:5173](http://localhost:5173) and
 For Python 3.11/Node 22 setup without Docker, model preparation, and test commands,
 see [local development](docs/LOCAL_DEVELOPMENT.md). Container configuration is
 validated; local Docker startup still requires a running daemon.
+
+## Verification
+
+Checks completed on **November 17, 2026**:
+
+| Check | Result |
+| --- | --- |
+| Backend pytest | 176 passed; 1 skipped for Windows symlink privileges |
+| Frontend unit tests | 22 passed |
+| Browser checks | 10 passed; 1 opt-in live-backend test skipped |
+| Ruff, TypeScript and production build | Passed |
+| Render Blueprint and Compose configuration | Validated; local Docker runtime untested |
+| Live smoke and Render restart recovery | Pending demo readiness; smoke exited 1 |
+
+Browser checks use fixture API responses and cover cold starts, quota messages,
+restricted indexing, citations, history, mobile layout and Stop. Live health,
+CORS and indexing-policy checks do not establish working answer generation.
+See the [verification record and remaining checklist](docs/DEPLOY.md#last-verified).
 
 ## Evaluation
 
