@@ -86,6 +86,15 @@ class Storage:
     ):
         directory = self.repo_dir(repo_id)
         directory.mkdir(parents=True, exist_ok=True)
+        source_root = directory / "files"
+        expected = {path for path, _ in files}
+        # Stable demo IDs can be rebuilt from a newer commit. Remove only obsolete
+        # files in this snapshot so its file count stays consistent on next boot.
+        for previous in source_root.rglob("*"):
+            relative = previous.relative_to(source_root).as_posix()
+            if previous.is_file() and relative not in expected:
+                contained_path(source_root, relative)
+                previous.unlink()
         for path, content in files:
             destination = contained_path(directory / "files", path)
             destination.parent.mkdir(parents=True, exist_ok=True)

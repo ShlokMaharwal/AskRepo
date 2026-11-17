@@ -138,6 +138,87 @@ test("opening a demo waits for the repository list without starting another inde
   }
 });
 
+test("cold-start retries preserve the page and gate actions until demos are ready", async ({
+  page,
+}) => {
+  let calls = 0;
+  let ready = false;
+  await page.route("**/health", async (route) => {
+    if (++calls === 1) {
+      await route.fulfill({ status: 503, body: "Waking up" });
+      return;
+    }
+    await route.fulfill({
+      headers: { "Access-Control-Allow-Origin": "*" },
+      json: {
+        status: "ok",
+        service: "askrepo",
+        mode: "ready",
+        demoRepos: [{ name: "Seekr", status: ready ? "ready" : "indexing", chunks: 42 }],
+      },
+    });
+  });
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "AskRepo." })).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("Server is waking up on free hosting");
+  await expect(page.getByRole("button", { name: "Index repository", exact: true })).toBeDisabled();
+  const demo = page.getByRole("button", { name: /Seekr A search engine/ });
+  await expect(demo).toBeDisabled();
+  await expect(page.getByRole("status")).toContainText("Seekr: indexing", { timeout: 15000 });
+  ready = true;
+  await expect(demo).toBeEnabled({ timeout: 15000 });
+  await expect(page.locator(".backend-banner")).toHaveCount(0);
+  await demo.click();
+  await expect(page.getByRole("heading", { name: "Meet your codebase." })).toBeVisible();
+});
+
+test("allowlist keeps demo chat working while disabling arbitrary indexing", async ({ page }) => {
+  await page.route("**/health", async (route) =>
+    route.fulfill({
+      headers: { "Access-Control-Allow-Origin": "*" },
+      json: { status: "ok", service: "askrepo", mode: "ready", indexingMode: "allowlist" },
+    }),
+  );
+  await page.goto("/");
+  await expect(
+    page.getByText("This public demo indexes only the demo repositories.", {
+      exact: false,
+    }),
+  ).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Public GitHub repository URL" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Index repository", exact: true })).toBeDisabled();
+  await page.getByRole("button", { name: /Seekr A search engine/ }).click();
+  await page.getByRole("button", { name: /How does the URL frontier/ }).click();
+  await expect(page.locator(".citation-chip").first()).toBeVisible();
+});
+
+test("daily embedding quota is explained without leaving an empty screen", async ({ page }) => {
+  await page.route("**/health", async (route) =>
+    route.fulfill({
+      headers: { "Access-Control-Allow-Origin": "*" },
+      json: {
+        status: "ok",
+        service: "askrepo",
+        mode: "ready",
+        indexingMode: "allowlist",
+        demoRepos: [
+          {
+            name: "Seekr",
+            status: "failed",
+            chunks: 1729,
+            error:
+              "Gemini daily embedding quota is exhausted; background recovery will resume after the provider reset.",
+          },
+        ],
+      },
+    }),
+  );
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "AskRepo." })).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("daily embedding quota is exhausted");
+  await expect(page.getByRole("button", { name: /Seekr A search engine/ })).toBeDisabled();
+});
+
 test("live backend answers a pre-indexed real repository with working citations", async ({
   page,
 }) => {

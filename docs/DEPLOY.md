@@ -184,9 +184,73 @@ has not been verified locally because the Docker daemon is unavailable.
 
 ## Last verified
 
-The final live smoke output and restart evidence will be recorded here after the
-new reliability release is actually published and tested. Local tests and a
-successful build must not be presented as proof of live deployment.
+**November 17, 2026:** reliability release through `ed8e233` was pushed to `main`.
+The live API now returns the new quota-cooldown messages, bootstrap enabled, lite
+mode and allowlist policy. Actual command from the project root:
+
+```powershell
+.\.venv\Scripts\python.exe scripts/smoke_deploy.py https://askrepo-api.onrender.com https://askrepo-murex.vercel.app
+```
+
+Actual output (exit code **1**):
+
+```text
+PASS frontend responds
+FAIL Demos are not all ready; enable bootstrap and wait for indexing
+```
+
+Separate live read/preflight and rejected-index checks returned:
+
+```text
+Health HTTP: 200
+Lite/bootstrap/policy: True True allowlist
+Seekr: failed — Gemini daily embedding quota is exhausted; background recovery will resume after the provider reset.
+CodeNest: failed — Gemini embedding quota is cooling down; background recovery will resume automatically.
+DPTrace: failed — Gemini embedding quota is cooling down; background recovery will resume automatically.
+CORS: 200 https://askrepo-murex.vercel.app
+Non-demo indexing: 403
+```
+
+This verifies reachability, CORS and live indexing restriction, **not** successful
+answers, SSE or restart recovery. The smoke script stopped at readiness before
+asking questions. The project exhausted its daily Gemini embedding quota during
+initial indexing; the user chose to keep the free-tier run pending. Wait for
+quota and all demos to finish, then rerun the same command and perform the Render
+restart test above. No passing result or restart evidence is claimed here.
+
+Local browser checks: **10 passed, 1 skipped**. They cover desktop/mobile layout,
+citations, history, missing evidence, chunked stream cancellation, delayed health
+recovery, allowlist demos and readable daily-quota failure. Those use fixture API
+responses; the opt-in real-backend browser test was skipped because the demos
+are not ready. Compose syntax was validated, but Docker runtime remains untested.
+
+Final local checks on November 17: Ruff passed; backend pytest **176 passed,
+1 skipped** (Windows symlink privilege); frontend typecheck, **22 unit tests**,
+and production build passed. The test client emits a Starlette/httpx
+deprecation warning; it did not fail the tests.
+
+## Remaining manual checks
+
+- [x] Save bootstrap, deployment ID, allowlist, proxy and daily-cap settings on
+  the existing Render service. The user confirmed saving them; live health
+  confirms bootstrap/lite/allowlist and the non-demo request is rejected.
+- [ ] Allow the free-tier embedding quota to reset and background demo indexing
+  to finish. Keep the same deployment ID and Qdrant cluster so cache reuse works.
+  Check project minute budgets; the new RPM setting counts **inputs**.
+- [ ] Once all three demos are ready, run the live smoke command, restart Render,
+  and rerun after recovery. Replace the pending verification above only with
+  actual successful output.
+- [ ] Resume the [deployed-lite evaluation](EVALUATION.md#deployed-lite-profile)
+  after demo bootstrap has sufficient quota. Complete the comparative report and
+  20-answer automated audit; no draft labels have been marked reviewed.
+- [ ] Optionally connect a ten-minute `/health` monitor after reviewing free-tier
+  limits. It does not add quota or persistent disk.
+- [ ] Record the real [20–40 second GIF](RECORDING.md) and replace the README
+  placeholder.
+- [ ] Review the [relevance labels](../backend/eval/REVIEW.md) by hand.
+- [ ] Paste the [repository description, website and topics](REPO_METADATA.md)
+  into GitHub settings.
+- [ ] With Docker running, verify the local Compose stack if you plan to use it.
 
 ## Optional keep-alive
 

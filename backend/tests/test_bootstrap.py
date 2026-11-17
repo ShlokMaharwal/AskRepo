@@ -129,6 +129,29 @@ def test_bootstrap_resumes_after_transient_failure(tmp_path):
     assert len(calls) == 2
 
 
+def test_repair_removes_obsolete_files_and_next_restart_skips_rebuild(tmp_path):
+    calls = []
+
+    def clone(url, path, settings):
+        revision = fixture_clone(url, path, settings)
+        calls.append(1)
+        if len(calls) == 1:
+            (path / "removed.py").write_text("def obsolete():\n    return 1\n")
+        return revision
+
+    settings = config(tmp_path)
+    with TestClient(app(settings, clone)) as client:
+        repo_id = ready(client)["repoId"]
+    sources = Storage(tmp_path).repo_dir(repo_id) / "files"
+    (sources / "frontier.py").unlink()
+    with TestClient(app(settings, clone)) as client:
+        assert ready(client)["repoId"] == repo_id
+        assert not (sources / "removed.py").exists()
+    with TestClient(app(settings, clone)) as client:
+        assert ready(client)["repoId"] == repo_id
+    assert len(calls) == 2
+
+
 def test_vector_build_resumes_completed_batches_after_failure(tmp_path):
     from app.index.vectors import Vectors
     from app.ingest.chunker import chunk_file
