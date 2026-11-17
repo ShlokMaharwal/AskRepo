@@ -4,7 +4,21 @@ Ask questions about any codebase. Get answers with exact file and line citations
 
 AskRepo combines AST-aware chunks, persisted BM25, local or cloud Qdrant vectors, reciprocal-rank fusion, optional cross-encoder reranking, and grounded Gemini answers. It runs on a CPU without paid services: when no Gemini key is set, it returns cited source excerpts using an explicit extractive provider.
 
-The React interface has pure-black dark mode, a neutral light mode, indexing progress, persistent chat history, retrieval settings, independent mode comparison, a full file tree, and a responsive citation viewer. The seven core milestones and six extension milestones are implemented, including streamed answers with Stop, stateless follow-up memory, bounded agentic retrieval, quota protection, and evaluation. Local test/evaluation evidence and outstanding verification limits are recorded below. **No deployment has been performed.**
+The React interface has pure-black dark mode, a neutral light mode, indexing progress, persistent chat history, retrieval settings, independent mode comparison, a full file tree, and a responsive citation viewer. The seven core milestones and six extension milestones are implemented, including streamed answers with Stop, stateless follow-up memory, bounded agentic retrieval, quota protection, and evaluation. Local test/evaluation evidence and outstanding verification limits are recorded below.
+
+## Live deployment
+
+| Service | Link |
+| --- | --- |
+| AskRepo web app (Vercel) | [Open AskRepo](https://askrepo-murex.vercel.app/) |
+| Backend API documentation (Render) | [Explore the API](https://askrepo-api.onrender.com/docs) |
+| Backend health | [Check API health](https://askrepo-api.onrender.com/health) |
+
+The live backend runs in lightweight mode: Gemini creates embeddings and generates answers, and the local neural reranker is disabled. Its health response reports `gemini-3.5-flash-lite`, `liteMode:true`, and `agenticEnabled:false`. The frontend calls the Render API directly for streaming.
+
+**Verified on November 17, 2026:** the frontend, API documentation, health endpoint, and CORS preflight for the deployed frontend all returned HTTP 200. These infrastructure checks do not establish that hosted repository indexing, Gemini generation, or Qdrant Cloud retrieval has passed an end-to-end test.
+
+**Demo storage limitation:** Render Free uses ephemeral storage. Repository files, SQLite metadata, and BM25 indexes can disappear on sleep, restart, or redeployment. Qdrant Cloud preserves vectors only; it cannot restore the other repository data by itself. Reindex a repository and start a new chat after a backend storage reset. Browser chat history can outlive its backend repository snapshot.
 
 ## Architecture
 
@@ -31,7 +45,7 @@ flowchart LR
     Viewer --> UI
 ```
 
-Indexing workers are in-process, default concurrency 1, with a bounded queue. Models are loaded lazily; **nothing is cloned or indexed on API startup**. Clones and Git metadata are removed after the filtered source store and chunks have been saved. Completed repo metadata, source files, BM25, and local Qdrant survive restarts. Interrupted indexing is marked failed; indexing jobs themselves are ephemeral.
+Indexing workers are in-process, default concurrency 1, with a bounded queue. Models are loaded lazily; **nothing is cloned or indexed on API startup**. Clones and Git metadata are removed after the filtered source store and chunks have been saved. Completed repo metadata, source files, BM25, and local Qdrant survive restarts when the backend data directory is preserved; ephemeral hosting can discard that directory. Interrupted indexing is marked failed; indexing jobs themselves are ephemeral.
 
 ## Local setup
 
@@ -221,7 +235,7 @@ Validated complete answers have a bounded ten-minute in-memory cache. Keys inclu
 | `ASKREPO_LLM_MAX_RETRIES` / `ASKREPO_LLM_RETRY_BACKOFF_SECONDS` | `2` / `0.5` |
 | `ASKREPO_ANSWER_CACHE_SIZE` / `ASKREPO_ANSWER_CACHE_TTL_SECONDS` | `128` entries / `600` seconds; size 0 disables caching |
 
-For future Spaces/Vercel hosting, set `VITE_API_BASE_URL` to the Space URL and add the exact Vercel origin to `ASKREPO_CORS_ORIGINS`; stream POSTs share the same CORS policy. Keep secrets in the backend. Do not route SSE through a Vercel serverless function. Free-tier quotas vary by project/model; these controls bound usage but cannot guarantee provider availability. Cache, counters and request-ID budgets are per process and reset on restart. `llmCalls` counts text-provider attempts, not embedding requests or CPU inference. Lightweight mode also consumes Gemini embedding quota. No deployment has been performed.
+For the deployed Render/Vercel setup, `VITE_API_BASE_URL=https://askrepo-api.onrender.com` and `ASKREPO_CORS_ORIGINS=["https://askrepo-murex.vercel.app"]`; stream POSTs share the same CORS policy. Keep secrets in the backend. Do not route SSE through a Vercel serverless function. Free-tier quotas vary by project/model; these controls bound usage but cannot guarantee provider availability. Cache, counters and request-ID budgets are per process and reset on restart. `llmCalls` counts text-provider attempts, not embedding requests or CPU inference. Lightweight mode also consumes Gemini embedding quota.
 
 The original 45 questions and all 15 new follow-up cases (`followup-seekr-01`–`05`, `followup-codenest-01`–`05`, `followup-dptrace-01`–`05`) require manual review. Follow-up histories are authored drafts, not recorded model outputs. Verify the history, call sites and path/symbol targets in [the complete checklist](backend/eval/REVIEW.md).
 
@@ -262,13 +276,84 @@ npm.cmd run test:e2e
 
 Tests stub the embedding model, reranker and LLM while exercising actual local Qdrant persistence, the indexing queue, file store and API. Browser tests use installed Edge on Windows; elsewhere install Playwright Chromium with `npx playwright install chromium`. They cover the black/light themes, chat history, citation viewer, settings and mobile tabs. The isolated test server uses port 4173. The live backend test requires a running local API and that test origin in its CORS array; deterministic UI tests use intercepted contract responses. Set `ASKREPO_E2E_REUSE=true` only when intentionally testing an already running AskRepo build on port 4173.
 
-Verified locally: backend **122 passed, 1 skipped** (Windows symlink privilege), clean Ruff, frontend **17 unit tests passed**, clean TypeScript and changed-component ESLint, and successful Node and Vercel artifact builds. All **8 browser scenarios passed against the built production app**, including a real Seekr answer over SSE with no JSON fallback, working source citations, follow-up history, New chat, Stop closing a chunked HTTP connection, and opening a demo while the repository list is still loading. A fresh `octocat/Hello-World` HTTP smoke test also passed real cloning, indexing, source retrieval, cited answering, missing-evidence handling, and clone cleanup. The demo-preparation CLI recognized all three completed real demo indexes. The Vercel artifact build only prepares local files; it does not deploy. Gemini and Qdrant Cloud integrations are tested with SDK substitutes; no credentialed live call or Docker runtime check has been performed.
+Verified locally: backend **122 passed, 1 skipped** (Windows symlink privilege), clean Ruff, frontend **17 unit tests passed**, clean TypeScript and changed-component ESLint, and successful Node and Vercel artifact builds. All **8 browser scenarios passed against the built production app**, including a real Seekr answer over SSE with no JSON fallback, working source citations, follow-up history, New chat, Stop closing a chunked HTTP connection, and opening a demo while the repository list is still loading. A fresh `octocat/Hello-World` HTTP smoke test also passed real cloning, indexing, source retrieval, cited answering, missing-evidence handling, and clone cleanup. The demo-preparation CLI recognized all three completed real demo indexes. The Vercel artifact build only prepares local files; it does not deploy. Gemini and Qdrant Cloud integration tests use SDK substitutes. Render's Docker build and application startup succeeded; hosted checks verify the frontend, API docs, health, and CORS. Credentialed provider behavior and hosted end-to-end RAG remain outside those checks.
 
 This workspace's ignored local `.env` points at the completed `data/eval-indexes/ast` snapshots and allows the browser-test origin on port 4173. Model weights and source/vector snapshots are generated local data. A clean clone should follow the setup and explicit pre-indexing commands above.
 
 The default production build uses Nitro's Node server target. Start it with `npm run start` after `npm run build`. `npm run build:vercel` creates local Vercel Build Output API artifacts only; it does not deploy. The npm lockfile and `.npmrc` are authoritative for the retained Lovable starter's dependency graph. CI runs backend Ruff/pytest and frontend tests/typecheck/build.
 
-## Deployment preparation — no deployment performed
+## Deployment with Render and Vercel
+
+The public frontend is hosted on Vercel and the FastAPI backend on Render. Use the existing Dockerfile with `LITE_MODE=true` for a small backend instance. This selects Gemini embeddings and omits PyTorch, local BGE model downloads, and the local reranker. The build and runtime must both use lightweight mode.
+
+### Render backend
+
+Connect the GitHub repository as a Render Web Service with these settings:
+
+| Setting | Value |
+| --- | --- |
+| Branch | `main` |
+| Runtime | Docker |
+| Root directory | `backend` |
+| Dockerfile path | `./Dockerfile` |
+| Docker build context | `.` |
+| Docker command | Leave empty to use the Dockerfile command |
+| Health check path | `/health` |
+
+Render passes service environment variables into Docker builds as build arguments. Set `LITE_MODE=true` before the first build so the Dockerfile installs `requirements-lite.txt` rather than the full neural-model dependencies.
+
+Set these non-secret environment variables on the backend:
+
+```dotenv
+LITE_MODE=true
+PORT=7860
+ASKREPO_DATA_DIR=/data
+ASKREPO_LLM_PROVIDER=gemini
+ASKREPO_GEMINI_EMBEDDING_MODEL=gemini-embedding-001
+GEMINI_FAST_MODEL=gemini-3.5-flash-lite
+GEMINI_ANSWER_MODEL=gemini-3.5-flash-lite
+AGENTIC_ENABLED=false
+MAX_LLM_CALLS_PER_QUESTION=3
+ASKREPO_CORS_ORIGINS=["https://askrepo-murex.vercel.app"]
+```
+
+The model names above are deployment overrides, not changes to the code defaults listed earlier. Check model access and quotas in your Gemini project before indexing. Keep optional agentic retrieval disabled initially to reduce text-provider usage.
+
+Add `GEMINI_API_KEY` and `QDRANT_API_KEY` directly in Render's environment settings. Set `QDRANT_URL` to your cluster's HTTPS REST endpoint, for example `https://YOUR_CLUSTER_HOSTNAME:443`. Use a Qdrant Database API key with permission to create collections and write vectors. Never commit keys or place them in `VITE_*` variables.
+
+Enter only the JSON array in the value field for `ASKREPO_CORS_ORIGINS`, without the variable name, an equals sign, or extra surrounding quotes. Add each exact frontend origin when using a custom domain or a preview deployment. Save backend environment changes and redeploy.
+
+### Vercel frontend
+
+Import the same GitHub repository with these settings:
+
+| Setting | Value |
+| --- | --- |
+| Root directory | `frontend` |
+| Framework preset | Other |
+| Node.js | `22.x` |
+| Install command | `npm ci` |
+| Build command | `npm run build:vercel` |
+| Output directory | Leave the override disabled; Nitro emits `.vercel/output` |
+
+Set these environment variables before building:
+
+```dotenv
+VITE_API_BASE_URL=https://askrepo-api.onrender.com
+VITE_USE_MOCK=false
+```
+
+Changing a `VITE_*` value requires rebuilding/redeploying the frontend. The browser connects directly to Render for both JSON requests and SSE. The backend's `/` path has no homepage and can return 404; use `/health` or `/docs` to inspect it.
+
+### Deployment checks and storage
+
+Open the app, index a small public repository such as `https://github.com/octocat/Hello-World`, ask about its README, and open a citation. Then test a code repository, follow-up memory, and Stop. A healthy `/health` response alone does not exercise Gemini or Qdrant, because clients and model work are initialized lazily. Prepare demo repositories explicitly through the deployed interface; the ignored local data directory is not uploaded with GitHub source code.
+
+Render Free can sleep after 15 minutes of inactivity, and its filesystem is ephemeral. Files, BM25, and SQLite still need durable backend storage even when vectors are in Qdrant Cloud. Use a hosting plan with persistent storage, or implement external persistence for those artifacts, before relying on saved repositories across backend resets. A path named `/data` does not make storage persistent by itself.
+
+References: [Render Docker and build arguments](https://render.com/docs/docker), [Render free-service limits](https://render.com/docs/free), [Nitro/Vercel](https://nitro.build/deploy/providers/vercel), [Qdrant Cloud connections](https://qdrant.tech/documentation/cloud/cluster-access/).
+
+### Local Docker builds
 
 CPU Docker build, with models downloaded during the build:
 
@@ -279,15 +364,7 @@ docker run --rm -p 7860:7860 -v askrepo-data:/data askrepo
 docker build --build-arg LITE_MODE=true -t askrepo:lite ./backend
 ```
 
-The image uses Python 3.11, Git, a non-root user, one Uvicorn process and port 7860. `/data` is for writable persistent snapshots; `/opt/models` is the preloaded model cache. A running Docker daemon is required for runtime verification. Do not override those container paths with the local `.env` path values.
-
-When deployment is later authorized:
-
-1. **Hugging Face Spaces, Docker SDK:** use `backend` as the build context (or copy its contents to the Space repository). Set Space README YAML `sdk: docker` and `app_port: 7860`. Keep `ASKREPO_DATA_DIR=/data` and `ASKREPO_MODEL_CACHE=/opt/models`; persist `/data` if snapshots should survive restarts. Set `ASKREPO_CORS_ORIGINS=["https://your-frontend.vercel.app"]`. Add `GEMINI_API_KEY` as a secret for generated answers, or use extractive mode. Add both Qdrant variables for cloud vectors. For a small host build the lite image and supply the required Gemini key. Public model downloads need no secret for these BAAI models.
-2. **Qdrant Cloud:** create a free cluster, copy its HTTPS endpoint into `QDRANT_URL`, and place its API key in `QDRANT_API_KEY`. Collections are named `askrepo_<repoId>`. Source files, BM25 and the registry still need persistent backend storage; Qdrant Cloud alone does not persist them.
-3. **Vercel frontend:** project root `frontend`, Node 22, build command `npm run build:vercel`, framework preset Other, output setting at the framework default (Nitro emits `.vercel/output`). Set `VITE_API_BASE_URL=https://your-space.hf.space` and `VITE_USE_MOCK=false` before building. Add that exact frontend origin to the backend CORS array. Use `scripts/preindex.py` explicitly against the intended data storage to prepare demo snapshots; startup never auto-indexes them.
-
-References: [Spaces Docker](https://huggingface.co/docs/hub/spaces-sdks-docker), [Nitro/Vercel](https://nitro.build/deploy/providers/vercel), [Qdrant Cloud setup](https://qdrant.tech/documentation/cloud-quickstart/).
+The image uses Python 3.11, Git, a non-root user, one Uvicorn process and port 7860. Mount a Docker volume at `/data` to preserve local snapshots; `/opt/models` is the preloaded model cache in full mode. A running Docker daemon is required for local container checks. Do not override those container paths with the local `.env` path values. The lightweight image requires a Gemini key at runtime for embeddings.
 
 ## Known limitations
 
