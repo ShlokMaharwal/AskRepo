@@ -4,6 +4,8 @@ from collections import deque
 
 from starlette.responses import JSONResponse
 
+from app.client_ip import client_ip
+
 
 class RateLimiter:
     def __init__(self, max_buckets=10000, clock=time.monotonic):
@@ -41,10 +43,12 @@ class RequestGuard:
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
+        resolved = client_ip(scope, self.settings.trusted_proxies)
+        scope.setdefault("state", {})["client_ip"] = resolved
         path = scope.get("path", "")
         if scope["method"] != "POST" or path not in {"/ask", "/ask/stream", "/index", "/compare"}:
             return await self.app(scope, receive, send)
-        address = (scope.get("client") or ("unknown", 0))[0]
+        address = resolved
         route = "index" if path == "/index" else "ask"
         limit = (
             self.settings.index_rate_per_minute

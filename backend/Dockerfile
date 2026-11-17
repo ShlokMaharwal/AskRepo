@@ -20,4 +20,6 @@ RUN if [ "$LITE_MODE" != "true" ]; then python scripts/download_models.py; fi \
 COPY --chown=askrepo:askrepo app ./app
 USER askrepo
 EXPOSE 7860
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860", "--workers", "1", "--no-proxy-headers"]
+# The application resolves X-Forwarded-For from the original peer. An empty
+# Uvicorn trust list prevents a second rewrite before that security check.
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port \"${PORT:-7860}\" --workers 1 --proxy-headers --forwarded-allow-ips ''"]

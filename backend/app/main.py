@@ -1,5 +1,6 @@
 """AskRepo FastAPI application. Model downloads and ingestion are always explicit."""
 
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Query, Request
@@ -36,6 +37,14 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(application):
+        logging.getLogger("uvicorn.error").info(
+            "Client IP mode: %s",
+            "trusted platform ingress (rightmost address)"
+            if settings.trusted_proxies == "*"
+            else "trusted proxy CIDRs"
+            if settings.trusted_proxies
+            else "direct peer only",
+        )
         storage = Storage(settings.data_dir)
         storage.recover_interrupted()
         vectors = Vectors(settings, embedder or get_embedder(settings))
@@ -109,9 +118,7 @@ def create_app(
     def ask(request: AskRequest, http_request: Request):
         require_repo(request.repo_id)
         try:
-            return application.state.answers.ask(
-                request, ip=http_request.client.host if http_request.client else "unknown"
-            )
+            return application.state.answers.ask(request, ip=http_request.state.client_ip)
         except DemoLimitError as error:
             raise HTTPException(
                 429,
@@ -149,9 +156,7 @@ def create_app(
     def ask_stream(request: AskStreamRequest, http_request: Request):
         require_repo(request.repo_id)
         return EventStreamResponse(
-            application.state.answers.stream(
-                request, ip=http_request.client.host if http_request.client else "unknown"
-            )
+            application.state.answers.stream(request, ip=http_request.state.client_ip)
         )
 
     @application.get("/file", response_model=FileResponse)

@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,6 +10,18 @@ class Settings(BaseSettings):
 
     data_dir: Path = Path("data")
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    trusted_proxies: str = ""
+
+    @field_validator("trusted_proxies")
+    @classmethod
+    def valid_proxy_ranges(cls, value):
+        from app.client_ip import networks
+
+        if "*" in value and value.strip() != "*":
+            raise ValueError("Use either comma-separated proxy CIDRs or a single *")
+        networks(value)
+        return value.strip()
+
     embedding_model: str = "BAAI/bge-small-en-v1.5"
     reranker_model: str = "BAAI/bge-reranker-base"
     indexing_concurrency: int = Field(default=1, ge=1)
