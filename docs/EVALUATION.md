@@ -2,6 +2,60 @@
 
 Historical BGE CPU results below do not measure the deployed Gemini-embedding profile. All relevance labels remain drafts until reviewed by hand.
 
+## Deployed-lite profile
+
+<!-- ASKREPO:DEPLOYED:EVAL:START -->
+**November 17, 2026: quota-blocked, measurements pending.** A real Gemini run
+cached 45 query and 64 document embeddings before HTTP 429. The provider reported
+1,000 embedding inputs/day for this project and a reset about 22 hours away.
+The user chose to keep the free-tier run pending. No complete paired retrieval
+table, AST improvement claim, or 20-answer Gemini faithfulness score exists yet.
+See the [attempt record](../backend/eval/results/2026-11-17-deployed-lite-attempt.json).
+<!-- ASKREPO:DEPLOYED:EVAL:END -->
+
+This profile calls actual Gemini embeddings with 768 output dimensions, disables
+reranking, and uses isolated local Qdrant snapshots. It never opens or changes
+production collections. It compares fixed and AST chunking under BM25, vector,
+and hybrid retrieval, plus an evaluation-only AST context experiment adding up
+to 800 characters of imports/class headers to embedding and keyword text. Source
+code and citable ranges stay unchanged. No experiment is promoted to application
+defaults without completed comparative measurements.
+
+Fresh source snapshots were fetched for this attempt. All 45 draft path/symbol
+labels resolve, but that is not human relevance review. The completed report will
+record model names, source SHAs, implementation/question hashes, dimensions,
+chunk budgets, library versions, per-question rankings and chunk distributions.
+`eval.diagnose_lite` prints every fixed-over-AST Recall@10/MRR case, including
+labels and both top-ten lists. It explicitly notes how broad path/overlap labels
+can favor large fixed windows. It checks tiny/large chunks and missing path text.
+
+Resume from `backend`, preserving the same source and data directories:
+
+```powershell
+# Required keys stay in ignored backend/.env. Wait for available embedding quota.
+..\.venv\Scripts\python.exe -m eval.run_eval --profile deployed-lite --sources data/eval-sources-2026-11-17 --data-dir data/lite-eval-2026-11-17 --validate-only
+..\.venv\Scripts\python.exe -m eval.run_eval --profile deployed-lite --sources data/eval-sources-2026-11-17 --data-dir data/lite-eval-2026-11-17
+# After a completed report exists:
+..\.venv\Scripts\python.exe -m eval.diagnose_lite eval/results/YYYY-MM-DD-deployed-lite.json
+```
+
+The runner preserves exact model/task/text embeddings and matching vector-batch
+checkpoints, stops on quota failure, and refuses to overwrite a completed report.
+The date above describes the attempt, not a promise that quota is available now.
+Both production bootstrap and this offline run share the project's quota; allow
+the demos to finish first rather than competing with them for the same allowance.
+The full three-variant experiment needs more inputs than initial demo indexing.
+
+Query embeddings are prepared once and shared across modes. Reported warm local
+retrieval milliseconds **exclude Gemini embedding preparation and quota waits**;
+they must not be presented as Render response latency. Preparation and total
+wall time are recorded separately. The seeded 20-question answer audit uses
+actual Gemini generation, checks each citation against source bounds and retrieved
+evidence, and requests a same-family automated 0–4 rubric score with 20-second
+pauses. Failed/abstaining answers do not receive invented rubric scores. The
+answer plus judge share the configured provider-attempt cap. This is automated
+evidence, not human-validated faithfulness.
+
 ## Evaluation and manual review
 
 The harness compares fixed versus AST chunking against BM25, vector, hybrid RRF, and hybrid + rerank: **8 configurations, 45 draft questions, 3 public repository snapshots**. Embeddings and reranking use the actual BGE models on CPU. Each result includes per-question rankings, metrics, model/library versions, source revisions, question hashes, precision/batch settings, and index stats.

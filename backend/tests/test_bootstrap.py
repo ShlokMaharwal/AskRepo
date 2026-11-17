@@ -173,7 +173,7 @@ def test_embedding_retries_429_and_batches_without_sleeping(monkeypatch):
         if len(calls) == 1:
             raise QuotaError("secret must not be surfaced")
         return SimpleNamespace(
-            embeddings=[SimpleNamespace(values=[1.0]) for _ in kwargs["contents"]]
+            embeddings=[SimpleNamespace(values=[1.0] * 768) for _ in kwargs["contents"]]
         )
 
     embedder = GeminiEmbedder(
@@ -182,6 +182,6 @@ def test_embedding_retries_429_and_batches_without_sleeping(monkeypatch):
     embedder.client = SimpleNamespace(models=SimpleNamespace(embed_content=embed_content))
     waits = []
     monkeypatch.setattr(embedder.stop, "wait", lambda seconds: waits.append(seconds) or False)
-    assert embedder.encode(["a", "b", "c"]) == [[1.0], [1.0], [1.0]]
+    assert embedder.encode(["a", "b", "c"]) == [[1.0] * 768] * 3
     assert calls == [["a", "b"], ["a", "b"], ["c"]]
     assert max(waits) > 0

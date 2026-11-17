@@ -29,9 +29,13 @@ class DemoBootstrap:
         with self.lock:
             return [dict(self.states[url]) for url in self.urls]
 
-    def update(self, url, status, chunks=0):
+    def update(self, url, status, chunks=0, error=None):
         with self.lock:
             self.states[url].update(status=status, chunks=chunks)
+            if error:
+                self.states[url]["error"] = error
+            else:
+                self.states[url].pop("error", None)
 
     def start(self):
         if self.urls:
@@ -67,7 +71,7 @@ class DemoBootstrap:
                 self.update(url, "ready", job.chunks_created)
                 return
             if job.status == "failed":
-                self.update(url, "failed", job.chunks_created)
+                self.update(url, "failed", job.chunks_created, job.error)
                 return
             self.stop.wait(0.1)
 
@@ -87,6 +91,8 @@ class DemoBootstrap:
             if all(row["status"] == "ready" for row in self.snapshot()):
                 return
             delay = min(3600, self.settings.bootstrap_retry_seconds * 2 ** min(attempt, 6))
+            cooldown = getattr(self.vectors.embedder, "cooldown_remaining", lambda: 0)()
+            delay = max(delay, cooldown)
             attempt += 1
             self.stop.wait(delay)
 

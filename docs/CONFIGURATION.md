@@ -27,8 +27,11 @@ Copy `backend/.env.example` to ignored `backend/.env` for local use. The example
 | `ASKREPO_DEPLOYMENT_ID` | `local` | Stable unique deployment name; separates deterministic demo IDs across deployments. |
 | `ASKREPO_DEMO_REPOS` | `["https://github.com/ShlokMaharwal/Seekr","https://github.com/ShlokMaharwal/CodeNest","https://github.com/ShlokMaharwal/DPTrace"]` | JSON array of canonical public GitHub demo URLs; also the indexing allowlist. |
 | `ASKREPO_BOOTSTRAP_RETRY_SECONDS` | `60` | Initial background retry delay; exponential backoff is capped at one hour. |
-| `ASKREPO_GEMINI_EMBEDDING_BATCH_SIZE` | `32` | Maximum texts per Gemini embedding request, at most 32. |
-| `ASKREPO_GEMINI_EMBEDDING_RPM` | `10` | Embedding requests per minute, separately paced from generation. |
+| `ASKREPO_GEMINI_EMBEDDING_BATCH_SIZE` | `8` | Maximum texts per Gemini embedding request, at most 32. |
+| `ASKREPO_GEMINI_EMBEDDING_RPM` | `60` | Embedding inputs per rolling minute, not HTTP batches; match your project quota. |
+| `ASKREPO_GEMINI_EMBEDDING_TPM` | `20000` | Conservative estimated tokens per rolling minute; match your project quota. |
+| `ASKREPO_EMBEDDING_CACHE_ENABLED` | `true` | Lite/cloud only: persistent exact model/task/text embedding reuse after disk loss. |
+| `ASKREPO_EMBEDDING_CACHE_MAX_POINTS` | `10000` | Cloud cache point cap; no eviction or deletion when full. |
 | `ASKREPO_GEMINI_EMBEDDING_RETRIES` | `3` | Bounded retries for transient embedding provider errors. |
 | `ASKREPO_GEMINI_EMBEDDING_BACKOFF_SECONDS` | `5` | Initial exponential embedding retry delay; failed batches can resume. |
 | `ASKREPO_MODEL_THREADS` | `4` | CPU threads used by local neural models. |

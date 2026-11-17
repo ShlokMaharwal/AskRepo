@@ -1,4 +1,4 @@
-"""Run actual CPU retrieval benchmarks across both chunkers and all four modes."""
+"""Run explicit local CPU or deployed-lite Gemini retrieval evaluation profiles."""
 
 import argparse
 import hashlib
@@ -286,6 +286,7 @@ def main():
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--readme", type=Path, default=Path("../docs/EVALUATION.md"))
     parser.add_argument("--suite", choices=("retrieval", "advanced"), default="retrieval")
+    parser.add_argument("--profile", choices=("local-full", "deployed-lite"), default="local-full")
     parser.add_argument("--provider", choices=("extractive", "configured"), default="extractive")
     parser.add_argument("--advanced-data-dir", type=Path)
     parser.add_argument(
@@ -305,7 +306,11 @@ def main():
         help="Pause between records; configured Gemini defaults to 20 seconds, extractive to zero",
     )
     args = parser.parse_args()
-    if args.suite == "advanced":
+    if args.profile == "deployed-lite":
+        from eval.deployed_lite import evaluate_deployed_lite
+
+        evaluate_deployed_lite(args)
+    elif args.suite == "advanced":
         from eval.advanced import evaluate_advanced
 
         evaluate_advanced(args)

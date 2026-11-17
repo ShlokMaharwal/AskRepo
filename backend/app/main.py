@@ -65,6 +65,9 @@ def create_app(
             bootstrap.close()
             jobs.close()
             retriever.close()
+            release = getattr(vectors.embedder, "release", None)
+            if release:
+                release()
 
     application = FastAPI(title="AskRepo", version="1.0.0", lifespan=lifespan)
     application.state.settings = settings

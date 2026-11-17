@@ -4,6 +4,7 @@ export type DemoReadiness = {
   name: string;
   status: "ready" | "indexing" | "queued" | "failed";
   chunks: number;
+  error?: string;
 };
 
 export type BackendHealth = {

@@ -33,8 +33,10 @@ Free hosting can sleep and cold starts can take about a minute. The UI retries
 health checks and shows readiness rather than a blank page. Render disk is
 ephemeral: enable demo bootstrap to rebuild files, BM25 and registry data after a
 reset. Stable demo IDs replace their own vector collections without touching
-unrelated collections. Quotas can delay preparation; bootstrap and provider
-retries are bounded/backed off. Browser chat history can outlive a lost snapshot.
+unrelated collections. Exact cloud-cached embeddings survive local disk loss.
+An empty-cache first build can take several quota days: the current project's
+1,000-input daily embedding allowance is smaller than the 3,618 AST demo chunks.
+Provider reset delays are respected. Browser chat history can outlive a lost snapshot.
 
 | Capability | Local full mode | Deployed lite mode |
 | --- | --- | --- |
@@ -74,8 +76,10 @@ results, provenance, protocols and limitations are in
 [the review checklist](backend/eval/REVIEW.md).
 
 <!-- ASKREPO:DEPLOYED:EVAL:START -->
-The deployed-lite benchmark and automated Gemini faithfulness audit are being
-prepared. No deployed-lite result is claimed until a completed measured report is saved.
+**November 17, 2026: pending Gemini daily-quota reset.** The actual deployed-lite
+attempt cached 45 query and 64 document embeddings before the provider returned
+429. No retrieval-quality or automated faithfulness score is claimed. The run
+can resume from those exact-input caches. See [attempt evidence and protocol](docs/EVALUATION.md#deployed-lite-profile).
 <!-- ASKREPO:DEPLOYED:EVAL:END -->
 
 ## Verify a deployment

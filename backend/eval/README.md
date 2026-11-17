@@ -1,6 +1,10 @@
 # Retrieval evaluation
 
-Run from `backend`. Neural inference is CPU-only. The default models are BAAI/bge-small-en-v1.5 and BAAI/bge-reranker-base; no generation API is called during retrieval benchmarks.
+Run from `backend`. The default `local-full` profile uses CPU BGE embeddings and
+reranking. The separate `--profile deployed-lite` calls real Gemini embeddings,
+has no reranker, uses isolated local Qdrant, and includes a Gemini answer/rubric
+audit. It requires available API quota. See the [deployed-lite protocol and pending
+attempt](../../docs/EVALUATION.md#deployed-lite-profile) before running it.
 
 1. Fetch source-only snapshots with `python -m eval.prepare`. This uses the same bounded public GitHub clone routine as the application and never executes repository code.
 2. Validate paths and symbols with `python -m eval.run_eval --validate-only`.
@@ -27,7 +31,7 @@ The initial run is a single pass on an interactive development laptop, with othe
 
 ## Artifacts and reproducibility
 
-`results/YYYY-MM-DD.json` contains all per-question ranked chunks/metrics, aggregate rows, source commit SHAs, question hashes, implementation hash, library versions, CPU precision/batches/threads and file/chunk counts. The runner prints a Markdown table and updates only the `ASKREPO:EVAL` marker block in the project README. It never invents a result for a failed configuration.
+`results/YYYY-MM-DD.json` contains all per-question ranked chunks/metrics, aggregate rows, source commit SHAs, question hashes, implementation hash, library versions, CPU precision/batches/threads and file/chunk counts. The runner prints a Markdown table and updates only its marker block in the evaluation reference. It never invents a result for a failed configuration.
 
 Index snapshots are cached in ignored `data/eval-indexes/{fixed,ast}` directories. IDs incorporate the source commit, implementation fingerprint, chunk budget and embedding model/profile. Use a new `--data-dir` for a fully fresh index build. Keep model configuration and cached source snapshots fixed when comparing repeated runs.
 

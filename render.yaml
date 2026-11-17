@@ -27,7 +27,13 @@ services:
       - key: ASKREPO_MAX_NEW_REPOS_PER_DAY
         value: "5"
       - key: ASKREPO_GEMINI_EMBEDDING_RPM
-        value: "10"
+        value: "60"
+      - key: ASKREPO_GEMINI_EMBEDDING_BATCH_SIZE
+        value: "8"
+      - key: ASKREPO_GEMINI_EMBEDDING_TPM
+        value: "20000"
+      - key: ASKREPO_EMBEDDING_CACHE_ENABLED
+        value: "true"
       - key: ASKREPO_LLM_GLOBAL_RPM
         value: "5"
       - key: ASKREPO_LLM_PER_IP_RPM

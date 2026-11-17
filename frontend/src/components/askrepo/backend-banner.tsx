@@ -34,6 +34,7 @@ export function BackendBanner({
             {demos.map((repo) => (
               <li key={repo.name}>
                 {repo.name}: {repo.status} · {repo.chunks.toLocaleString()} chunks
+                {repo.error ? ` — ${repo.error}` : ""}
               </li>
             ))}
           </ul>

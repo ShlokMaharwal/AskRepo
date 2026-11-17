@@ -91,9 +91,26 @@ leave `ASKREPO_INDEXING_MODE=allowlist`. The API starts immediately and `/health
 reports queued/indexing/failed/ready states without contacting models or Qdrant.
 The background coordinator checks local files, BM25, embedding profile, and the
 configured demo collection's point count, then queues one rebuild at a time.
-A first boot can take several minutes or longer under embedding quotas. Failed
-batches resume from matching checkpoints while local artifacts survive; after a
-complete disk reset they must be recreated. Retries back off automatically.
+A first boot can take several days under a small daily embedding quota. Failed
+batches resume from matching checkpoints while local artifacts survive. Lite
+cloud mode also keeps a bounded content-addressed embedding cache in
+`askrepo_embedding_cache_<deployment-id>`, so exact model/task/text vectors can
+be reused after disk loss. Source files, BM25 and SQLite are still recreated.
+Cache payloads contain only input digests and the deployment owner, plus vectors;
+they do not contain raw code or queries. The default cap is 10,000 points. A full
+cache skips new writes without evicting existing vectors or deleting collections.
+
+On November 17, the actual project's provider reported **1,000 embedding inputs
+per day** and a reset about 22 hours away. The three AST demo snapshots contain
+3,618 chunks before reuse. That project's empty-cache first build therefore
+cannot finish in one quota day. Batching does not multiply the daily allowance.
+Your project's limits may differ; inspect them in AI Studio. Minute pacing counts
+inputs, not HTTP batches (`ASKREPO_GEMINI_EMBEDDING_RPM=60` and estimated
+`ASKREPO_GEMINI_EMBEDDING_TPM=20000` in the Blueprint). Reduce these values to your
+allowance. Long provider RetryInfo delays put bootstrap into a cooldown; the
+health banner shows the quota explanation. Keeping the free-tier run pending
+does not require billing or another key. The cache reduces repeated work; it
+does not guarantee uninterrupted progress if hosting sleeps before reset.
 
 Future demo rebuilds replace only their own stable target collection. Unknown
 legacy/random-ID collections cannot be safely attributed after registry loss and

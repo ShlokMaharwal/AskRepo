@@ -35,7 +35,7 @@ def test_gemini_embeddings_use_distinct_retrieval_task_types(monkeypatch):
     def embed_content(**kwargs):
         captured.append(kwargs["config"].task_type)
         return SimpleNamespace(
-            embeddings=[SimpleNamespace(values=[0.1, 0.2, 0.3]) for _ in kwargs["contents"]]
+            embeddings=[SimpleNamespace(values=[0.1] * 768) for _ in kwargs["contents"]]
         )
 
     monkeypatch.setattr(

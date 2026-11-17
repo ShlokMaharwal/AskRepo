@@ -6,6 +6,8 @@ from typing import Protocol
 from uuid import UUID
 
 from app.config import Settings
+from app.index.embedding_cache import CloudEmbeddingCache, embedding_key
+from app.index.embedding_quota import EmbeddingPacer, EmbeddingQuotaError, retry_delay
 from app.ingest.chunker import Chunk
 
 
@@ -67,19 +69,42 @@ class GeminiEmbedder:
         self.client = None
         self.lock = threading.RLock()
         self.stop = threading.Event()
-        self.next_request = 0.0
+        self.requests = 0
+        self.cooldown_until = 0.0
+        self.pacer = EmbeddingPacer(settings, self.stop)
+        self.embedding_cache = (
+            CloudEmbeddingCache(settings)
+            if (settings.lite_mode and settings.qdrant_url and settings.embedding_cache_enabled)
+            else None
+        )
 
     def close(self):
         self.stop.set()
+
+    def release(self):
+        """Release clients only after indexing and retrieval workers have stopped."""
+        if self.embedding_cache:
+            self.embedding_cache.close()
+        if self.client is not None and hasattr(self.client, "close"):
+            self.client.close()
+
+    def cooldown_remaining(self):
+        return max(0, self.cooldown_until - time.monotonic())
 
     def embed_batch(self, texts, query):
         from google.genai import types
 
         for attempt in range(self.settings.gemini_embedding_retries + 1):
-            if self.stop.wait(max(0, self.next_request - time.monotonic())):
+            if self.cooldown_remaining() > 0:
+                raise EmbeddingQuotaError(
+                    "Gemini embedding quota is cooling down; "
+                    "background recovery will resume automatically."
+                )
+            if self.stop.is_set():
                 raise RuntimeError("Embedding work stopped")
-            self.next_request = time.monotonic() + 60 / self.settings.gemini_embedding_rpm
+            self.pacer.acquire(texts)
             try:
+                self.requests += 1
                 return self.client.models.embed_content(
                     model=self.name,
                     contents=texts,
@@ -96,11 +121,20 @@ class GeminiEmbedder:
                     retryable = int(code) == 429 or 500 <= int(code) <= 599
                 except (TypeError, ValueError):
                     retryable = False
+                wait = retry_delay(error)
+                if retryable and wait > 300:
+                    self.cooldown_until = time.monotonic() + wait
+                    raise EmbeddingQuotaError(
+                        "Gemini daily embedding quota is exhausted; "
+                        "background recovery will resume after the provider reset."
+                    ) from None
                 if not retryable or attempt == self.settings.gemini_embedding_retries:
                     raise RuntimeError(
                         "Embedding provider unavailable or quota exhausted; retry later"
                     ) from None
-                delay = min(300, self.settings.gemini_embedding_backoff_seconds * 2**attempt)
+                delay = max(
+                    wait, min(300, self.settings.gemini_embedding_backoff_seconds * 2**attempt)
+                )
                 if self.stop.wait(delay):
                     raise RuntimeError("Embedding work stopped") from None
 
@@ -121,13 +155,27 @@ class GeminiEmbedder:
             result = []
             batch_size = self.settings.gemini_embedding_batch_size
             for offset in range(0, len(texts), batch_size):
-                response = self.embed_batch(texts[offset : offset + batch_size], query)
-                if not response.embeddings:
-                    raise ValueError("Embedding provider returned no embeddings")
-                for item in response.embeddings:
-                    if not item.values:
-                        raise ValueError("Embedding provider returned an empty vector")
-                    result.append(item.values)
+                batch = texts[offset : offset + batch_size]
+                keys = [embedding_key(self.name, text, query) for text in batch]
+                cached = self.embedding_cache.get(keys) if self.embedding_cache else {}
+                missing = {
+                    key: text for key, text in zip(keys, batch, strict=True) if key not in cached
+                }
+                if missing:
+                    response = self.embed_batch(list(missing.values()), query)
+                    if not response.embeddings or len(response.embeddings) != len(missing):
+                        raise ValueError("Embedding provider returned an incorrect vector count")
+                    values = {}
+                    for key, item in zip(missing, response.embeddings, strict=True):
+                        if not item.values or len(item.values) != 768:
+                            raise ValueError(
+                                "Embedding provider must return 768-dimensional vectors"
+                            )
+                        values[key] = item.values
+                    if self.embedding_cache:
+                        self.embedding_cache.put(values)
+                    cached.update(values)
+                result.extend(cached[key] for key in keys)
             return result
 
 
@@ -187,8 +235,9 @@ class Vectors:
                         start = 0
             except (OSError, ValueError, KeyError, TypeError):
                 pass
-        for offset in range(start, len(chunks), 64):
-            batch = chunks[offset : offset + 64]
+        batch_size = self.settings.gemini_embedding_batch_size if self.settings.lite_mode else 64
+        for offset in range(start, len(chunks), batch_size):
+            batch = chunks[offset : offset + batch_size]
             embeddings = self.embedder.encode([chunk.text for chunk in batch])
             if len(embeddings) != len(batch):
                 raise ValueError("Embedding count does not match chunk count")
@@ -223,7 +272,7 @@ class Vectors:
                 checkpoint.parent.mkdir(parents=True, exist_ok=True)
                 temporary = checkpoint.with_suffix(".tmp")
                 temporary.write_text(
-                    json.dumps({"digest": digest, "offset": min(offset + 64, len(chunks))}),
+                    json.dumps({"digest": digest, "offset": min(offset + batch_size, len(chunks))}),
                     encoding="utf-8",
                 )
                 temporary.replace(checkpoint)

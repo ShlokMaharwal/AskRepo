@@ -1,0 +1,80 @@
+{
+  "recorded_at": "2026-11-17T10:05:23.342801+00:00",
+  "attempt_date": "2026-11-17",
+  "profile": "deployed-lite",
+  "status": "quota_blocked",
+  "ground_truth_status": "draft-human review required",
+  "embedding_model": "gemini-embedding-001",
+  "dimensions": 768,
+  "reranker": null,
+  "vector_backend": "isolated local Qdrant; no production collections",
+  "completed_cached_embedding_inputs": {
+    "query": 45,
+    "document": 64
+  },
+  "completed_fixed_vector_checkpoint_offsets": [
+    64
+  ],
+  "snapshots": [
+    {
+      "repo": "Seekr",
+      "source_revision": "fef9a5ef114cd4ecafc03fc50266a69e1c9527d2",
+      "files": 189,
+      "ast_distribution": {
+        "count": 1729,
+        "min": 1,
+        "median": 201,
+        "max": 5996,
+        "tiny_below_120": 564,
+        "large_above_4500": 7,
+        "missing_path_in_embedding": 0
+      }
+    },
+    {
+      "repo": "CodeNest",
+      "source_revision": "7e32ab7b23bbdf69282d9c59ed877c05eda82e41",
+      "files": 129,
+      "ast_distribution": {
+        "count": 1145,
+        "min": 1,
+        "median": 148,
+        "max": 5997,
+        "tiny_below_120": 516,
+        "large_above_4500": 30,
+        "missing_path_in_embedding": 0
+      }
+    },
+    {
+      "repo": "DPTrace",
+      "source_revision": "7a04a66954f6481ddcbf428b386385fd8e32380b",
+      "files": 125,
+      "ast_distribution": {
+        "count": 744,
+        "min": 10,
+        "median": 226.5,
+        "max": 5991,
+        "tiny_below_120": 277,
+        "large_above_4500": 9,
+        "missing_path_in_embedding": 0
+      }
+    }
+  ],
+  "current_implementation_sha256": "7e0d9454b39daaa87f2f03d90d39195864716b1d1307e264ba0ac182fcb78132",
+  "observed_provider_error": {
+    "http_status": 429,
+    "metric": "embed_content_free_tier_requests",
+    "daily_input_limit_reported": 1000,
+    "retry_delay_reported_seconds": 80015.199362038,
+    "note": "Sanitized diagnostic from the failed actual run; historical delay, not current availability."
+  },
+  "pending": [
+    "complete fixed/ast/context experiment across BM25/vector/hybrid",
+    "AST comparison and measured fix decision",
+    "20 Gemini answers and automated rubric",
+    "successful live citations/SSE smoke and Render restart recovery"
+  ],
+  "retrieval_metrics": null,
+  "answer_quality_metrics": null,
+  "resume_command": "python -m eval.run_eval --profile deployed-lite --sources data/eval-sources-2026-11-17 --data-dir data/lite-eval-2026-11-17",
+  "user_decision": "Keep free-tier run pending; do not spend more embedding quota now."
+}
