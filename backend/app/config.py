@@ -21,6 +21,18 @@ class Settings(BaseSettings):
     chunk_strategy: Literal["ast", "fixed"] = "ast"
     max_chunk_chars: int = Field(default=6000, ge=256)
     max_queued_jobs: int = Field(default=20, ge=1)
+    bootstrap_demos: bool = False
+    deployment_id: str = Field(default="local", pattern=r"^[A-Za-z0-9_-]{1,50}$")
+    demo_repos: list[str] = [
+        "https://github.com/ShlokMaharwal/Seekr",
+        "https://github.com/ShlokMaharwal/CodeNest",
+        "https://github.com/ShlokMaharwal/DPTrace",
+    ]
+    bootstrap_retry_seconds: float = Field(default=60, ge=0.1, le=3600)
+    gemini_embedding_batch_size: int = Field(default=32, ge=1, le=32)
+    gemini_embedding_rpm: int = Field(default=10, ge=1, le=1000)
+    gemini_embedding_retries: int = Field(default=3, ge=0, le=5)
+    gemini_embedding_backoff_seconds: float = Field(default=5, ge=0, le=300)
     model_threads: int = Field(default=4, ge=1, le=32)
     model_cache: Path = Path("data/models")
     gemini_embedding_model: str = "gemini-embedding-001"

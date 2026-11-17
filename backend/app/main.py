@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.bootstrap import DemoBootstrap
 from app.config import Settings
 from app.errors import DemoLimitError, IndexConfigurationError
 from app.generate.llm import get_llm
@@ -45,9 +46,13 @@ def create_app(
         application.state.storage, application.state.jobs = storage, jobs
         application.state.retriever = retriever
         application.state.answers = AnswerService(retriever, provider, settings)
+        bootstrap = DemoBootstrap(settings, storage, jobs, vectors)
+        application.state.bootstrap = bootstrap
+        bootstrap.start()
         try:
             yield
         finally:
+            bootstrap.close()
             jobs.close()
             retriever.close()
 
@@ -81,6 +86,8 @@ def create_app(
             "liteMode": settings.lite_mode,
             "agenticEnabled": settings.agentic_enabled,
             "maxLlmCalls": settings.max_llm_calls_per_question,
+            "bootstrapEnabled": settings.bootstrap_demos,
+            "demoRepos": application.state.bootstrap.snapshot(),
         }
 
     @application.post("/index", response_model=IndexResponse)

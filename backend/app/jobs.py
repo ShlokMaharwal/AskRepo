@@ -40,11 +40,14 @@ class Jobs:
         self.lock = threading.RLock()
         self.jobs: dict[str, JobStatus] = {}
         self.pending = 0
+        self.active_urls = {}
         self.temporary_root = storage.root / "tmp"
         self.temporary_root.mkdir(exist_ok=True)
 
-    def submit(self, url: str) -> tuple[str, str]:
+    def submit(self, url: str, *, repo_id=None) -> tuple[str, str]:
         with self.lock:
+            if url.lower() in self.active_urls:
+                return self.active_urls[url.lower()]
             if self.pending >= self.settings.indexing_concurrency + self.settings.max_queued_jobs:
                 raise OverflowError("Indexing queue is full; try again later")
             # Keep the registry bounded, retaining active jobs and the most recent outcomes.
@@ -53,9 +56,10 @@ class Jobs:
                     break
                 if self.jobs[key].status in {"ready", "failed"}:
                     del self.jobs[key]
-            job_id, repo_id = uuid4().hex, uuid4().hex
+            job_id, repo_id = uuid4().hex, repo_id or uuid4().hex
             self.jobs[job_id] = JobStatus(status="cloning", queued=True)
             self.pending += 1
+            self.active_urls[url.lower()] = (job_id, repo_id)
             self.executor.submit(self.run, job_id, repo_id, url)
             return job_id, repo_id
 
@@ -112,6 +116,7 @@ class Jobs:
             finally:
                 with self.lock:
                     self.pending -= 1
+                    self.active_urls.pop(url.lower(), None)
 
     def close(self):
         self.executor.shutdown(wait=True, cancel_futures=False)

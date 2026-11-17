@@ -66,6 +66,8 @@ def test_health_and_empty_registry(client):
         "liteMode": False,
         "agenticEnabled": True,
         "maxLlmCalls": 3,
+        "bootstrapEnabled": False,
+        "demoRepos": [],
     }
     assert client.get("/repos").json() == []
 

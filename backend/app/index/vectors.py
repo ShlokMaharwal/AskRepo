@@ -1,4 +1,7 @@
+import hashlib
+import json
 import threading
+import time
 from typing import Protocol
 from uuid import UUID
 
@@ -63,10 +66,46 @@ class GeminiEmbedder:
         self.name = settings.gemini_embedding_model
         self.client = None
         self.lock = threading.RLock()
+        self.stop = threading.Event()
+        self.next_request = 0.0
+
+    def close(self):
+        self.stop.set()
+
+    def embed_batch(self, texts, query):
+        from google.genai import types
+
+        for attempt in range(self.settings.gemini_embedding_retries + 1):
+            if self.stop.wait(max(0, self.next_request - time.monotonic())):
+                raise RuntimeError("Embedding work stopped")
+            self.next_request = time.monotonic() + 60 / self.settings.gemini_embedding_rpm
+            try:
+                return self.client.models.embed_content(
+                    model=self.name,
+                    contents=texts,
+                    config=types.EmbedContentConfig(
+                        task_type="RETRIEVAL_QUERY" if query else "RETRIEVAL_DOCUMENT",
+                        output_dimensionality=768,
+                    ),
+                )
+            except Exception as error:
+                code = getattr(error, "code", None) or getattr(
+                    getattr(error, "response", None), "status_code", 0
+                )
+                try:
+                    retryable = int(code) == 429 or 500 <= int(code) <= 599
+                except (TypeError, ValueError):
+                    retryable = False
+                if not retryable or attempt == self.settings.gemini_embedding_retries:
+                    raise RuntimeError(
+                        "Embedding provider unavailable or quota exhausted; retry later"
+                    ) from None
+                delay = min(300, self.settings.gemini_embedding_backoff_seconds * 2**attempt)
+                if self.stop.wait(delay):
+                    raise RuntimeError("Embedding work stopped") from None
 
     def encode(self, texts: list[str], *, query=False) -> list[list[float]]:
         from google import genai
-        from google.genai import types
 
         with self.lock:
             if (
@@ -77,18 +116,12 @@ class GeminiEmbedder:
             if self.client is None:
                 self.client = genai.Client(
                     api_key=self.settings.gemini_api_key.get_secret_value(),
-                    http_options=types.HttpOptions(timeout=60000),
+                    http_options={"timeout": 60000, "retry_options": {"attempts": 1}},
                 )
             result = []
-            for offset in range(0, len(texts), 32):
-                response = self.client.models.embed_content(
-                    model=self.name,
-                    contents=texts[offset : offset + 32],
-                    config=types.EmbedContentConfig(
-                        task_type="RETRIEVAL_QUERY" if query else "RETRIEVAL_DOCUMENT",
-                        output_dimensionality=768,
-                    ),
-                )
+            batch_size = self.settings.gemini_embedding_batch_size
+            for offset in range(0, len(texts), batch_size):
+                response = self.embed_batch(texts[offset : offset + batch_size], query)
                 if not response.embeddings:
                     raise ValueError("Embedding provider returned no embeddings")
                 for item in response.embeddings:
@@ -137,7 +170,24 @@ class Vectors:
         from qdrant_client import models
 
         name = self.collection(repo_id)
-        for offset in range(0, len(chunks), 64):
+        checkpoint = self.settings.data_dir / "repos" / repo_id / "vector-progress.json"
+        digest = hashlib.sha256(
+            json.dumps([self.embedder.name, [(chunk.id, chunk.text) for chunk in chunks]]).encode()
+        ).hexdigest()
+        start = 0
+        with self.lock:
+            client = self._client()
+            try:
+                previous = json.loads(checkpoint.read_text(encoding="utf-8"))
+                if previous["digest"] == digest and client.collection_exists(name):
+                    start = previous["offset"]
+                    if not isinstance(start, int) or not 0 <= start <= len(chunks):
+                        start = 0
+                    elif client.get_collection(name).points_count != start:
+                        start = 0
+            except (OSError, ValueError, KeyError, TypeError):
+                pass
+        for offset in range(start, len(chunks), 64):
             batch = chunks[offset : offset + 64]
             embeddings = self.embedder.encode([chunk.text for chunk in batch])
             if len(embeddings) != len(batch):
@@ -146,6 +196,11 @@ class Vectors:
                 client = self._client()
                 if offset == 0:
                     if client.collection_exists(name):
+                        if not self.settings.qdrant_url:
+                            # Embedded Qdrant on Windows can retain an open SQLite
+                            # handle while deleting its directory. Clear only this
+                            # rebuild target through the public API before recreation.
+                            client.delete(name, points_selector=models.Filter(), wait=True)
                         client.delete_collection(name)
                     client.create_collection(
                         name,
@@ -165,6 +220,22 @@ class Vectors:
                         for chunk, vector in zip(batch, embeddings, strict=True)
                     ],
                 )
+                checkpoint.parent.mkdir(parents=True, exist_ok=True)
+                temporary = checkpoint.with_suffix(".tmp")
+                temporary.write_text(
+                    json.dumps({"digest": digest, "offset": min(offset + 64, len(chunks))}),
+                    encoding="utf-8",
+                )
+                temporary.replace(checkpoint)
+
+    def healthy(self, repo_id, expected_chunks):
+        with self.lock:
+            client = self._client()
+            name = self.collection(repo_id)
+            return (
+                client.collection_exists(name)
+                and client.get_collection(name).points_count == expected_chunks
+            )
 
     def search(self, repo_id: str, question: str, limit=50) -> list[tuple[str, float]]:
         vector = self.embedder.encode([question], query=True)[0]

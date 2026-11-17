@@ -103,6 +103,34 @@ class Storage:
         with self.lock, self.connect() as connection:
             connection.execute("UPDATE repos SET status='failed' WHERE status='indexing'")
 
+    def entries(self):
+        with self.connect() as connection:
+            return [dict(row) for row in connection.execute("SELECT * FROM repos")]
+
+    def stale(self, repo_id):
+        with self.lock, self.connect() as connection:
+            connection.execute("UPDATE repos SET status='stale' WHERE id=?", (repo_id,))
+
+    def healthy_local(self, repo_id, embedding_model):
+        """Validate persisted artifacts in the background, never in /health."""
+        from app.index.bm25 import BM25
+
+        try:
+            metadata = self.metadata(repo_id)
+            if metadata["status"] != "ready" or metadata["embedding_model"] != embedding_model:
+                return False
+            chunks = self.chunks(repo_id)
+            keyword = BM25.load(self.repo_dir(repo_id) / "bm25.json")
+            if not chunks or len(chunks) != metadata["chunks"]:
+                return False
+            if keyword.ids != [chunk.id for chunk in chunks]:
+                return False
+            files = self.files(repo_id)
+            paths = {item["path"] for item in files}
+            return len(files) == metadata["files"] and all(chunk.path in paths for chunk in chunks)
+        except (OSError, ValueError, KeyError, TypeError):
+            return False
+
     def metadata(self, repo_id: str):
         self.repo_dir(repo_id)
         with self.connect() as connection:
