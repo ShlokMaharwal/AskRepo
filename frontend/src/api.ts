@@ -1,4 +1,5 @@
 import { demoFiles, mockApi } from "@/lib/demo";
+import { BackendUnavailableError, retryHealth, type BackendHealth } from "@/lib/backend-status";
 import {
   consumeAnswerStream,
   StreamRemoteError,
@@ -80,14 +81,19 @@ function errorMessage(payload: unknown, status: number): string {
   return fallback;
 }
 
-async function request<T>(path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
+async function request<T>(
+  path: string,
+  body?: unknown,
+  signal?: AbortSignal,
+  timeout = 120000,
+): Promise<T> {
   throwIfAborted(signal);
   const controller = new AbortController();
   const abort = () => controller.abort(signal?.reason);
   signal?.addEventListener("abort", abort, { once: true });
   const timer = setTimeout(
     () => controller.abort(new DOMException("Request timed out", "TimeoutError")),
-    120000,
+    timeout,
   );
   try {
     const response = await fetch(`${baseUrl}${path}`, {
@@ -102,9 +108,16 @@ async function request<T>(path: string, body?: unknown, signal?: AbortSignal): P
     });
     if (!response.ok) {
       const payload = await response.json().catch(() => null);
+      if ([502, 503, 504].includes(response.status) && !payload)
+        throw new BackendUnavailableError();
       throw new Error(errorMessage(payload, response.status));
     }
     return (await response.json()) as T;
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    if (error instanceof TypeError || controller.signal.aborted)
+      throw new BackendUnavailableError();
+    throw error;
   } finally {
     clearTimeout(timer);
     signal?.removeEventListener("abort", abort);
@@ -251,16 +264,10 @@ export const api = {
       return mock().then((provider) => provider.compare(input));
     return request<Comparison>("/compare", input);
   },
-  health: () =>
-    request<{
-      status: string;
-      service: string;
-      mode: string;
-      generation?: string;
-      liteMode?: boolean;
-      agenticEnabled?: boolean;
-      maxLlmCalls?: number;
-    }>("/health"),
+  health: (signal?: AbortSignal) =>
+    useMock
+      ? Promise.resolve<BackendHealth>({ status: "ok", service: "askrepo", mode: "mock" })
+      : retryHealth(() => request<BackendHealth>("/health", undefined, signal, 10000), signal),
   index: (repoUrl: string) =>
     useMock
       ? mock().then((provider) => provider.index(repoUrl))

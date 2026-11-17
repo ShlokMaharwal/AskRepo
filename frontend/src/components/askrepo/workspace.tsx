@@ -35,6 +35,7 @@ import {
 import { demoFiles, demoRepo } from "@/lib/demo";
 import { migrateStorage } from "@/lib/storage";
 import { requestHistory } from "@/lib/chat-history";
+import { healthReady } from "@/lib/backend-status";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +44,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Brand } from "./brand";
+import { BackendBanner } from "./backend-banner";
 import { CodeViewer } from "./code-viewer";
 import { Conversation, type Message } from "./conversation";
 import { FileTree } from "./file-tree";
@@ -133,10 +135,19 @@ export function Workspace() {
   const input = useRef<HTMLTextAreaElement>(null);
   const health = useQuery({
     queryKey: ["health"],
-    queryFn: api.health,
-    retry: false,
-    refetchInterval: 30000,
+    queryFn: ({ signal }) => api.health(signal),
+    retry: true,
+    retryDelay: 15000,
+    refetchInterval: 5000,
   });
+  const backendReady = (useMock || healthReady(health.data)) && health.failureCount === 0;
+  const [slowRequest, setSlowRequest] = useState(false);
+  useEffect(() => {
+    setSlowRequest(false);
+    if (!busy && !pendingId) return;
+    const timer = setTimeout(() => setSlowRequest(true), 10000);
+    return () => clearTimeout(timer);
+  }, [busy, pendingId]);
   const repositories = useQuery({ queryKey: ["repos"], queryFn: api.repos, retry: false });
   const currentSession = sessions.find((session) => session.id === sessionId);
   const messages = currentSession?.messages ?? [];
@@ -290,6 +301,7 @@ export function Workspace() {
     setMobileTab("chat");
   }
   async function index(url: string) {
+    if (!backendReady) return;
     setBusy(true);
     setError("");
     try {
@@ -304,6 +316,7 @@ export function Workspace() {
     }
   }
   async function openDemo(name: string) {
+    if (!backendReady) return;
     if (useMock) {
       openRepo(demoRepo(name));
       return;
@@ -330,7 +343,7 @@ export function Workspace() {
     }
   }
   async function ask(text: string) {
-    if (!repo || !text.trim() || text.trim().length > 500 || pendingId) return;
+    if (!repo || !backendReady || !text.trim() || text.trim().length > 500 || pendingId) return;
     const id = uid();
     const activeSessionId = sessionId ?? uid();
     const message: Message = { id, question: text.trim(), streaming: true };
@@ -648,12 +661,17 @@ export function Workspace() {
             </a>
           </div>
         </header>
+        <BackendBanner
+          health={health.data}
+          unreachable={!health.data || health.failureCount > 0}
+          slow={slowRequest}
+        />
         {view === "landing" ? (
           <div className="landing-scroll">
             <Landing
               onIndex={(url) => void index(url)}
               onDemo={(name) => void openDemo(name)}
-              busy={busy || !hydrated}
+              busy={busy || !hydrated || !backendReady}
               error={error}
             />
           </div>
@@ -729,7 +747,7 @@ export function Workspace() {
                       repoId={repo.repoId}
                       messages={messages}
                       repoName={repoName(repo)}
-                      pending={Boolean(pendingId)}
+                      pending={Boolean(pendingId) || !backendReady}
                       onAsk={(value) => void ask(value)}
                       onCitation={showCitation}
                     />
@@ -745,7 +763,7 @@ export function Workspace() {
                         rows={2}
                         maxLength={500}
                         value={question}
-                        disabled={Boolean(pendingId)}
+                        disabled={Boolean(pendingId) || !backendReady}
                         placeholder={`Ask anything about ${repoName(repo)}…`}
                         onChange={(event) => setQuestion(event.target.value)}
                         onKeyDown={(event) => {
@@ -780,7 +798,7 @@ export function Workspace() {
                             <button
                               className="send-button"
                               type="submit"
-                              disabled={!question.trim() || Boolean(pendingId)}
+                              disabled={!question.trim() || Boolean(pendingId) || !backendReady}
                               aria-label="Send question"
                             >
                               <ArrowUp size={17} />
