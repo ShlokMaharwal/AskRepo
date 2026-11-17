@@ -1,0 +1,62 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.20.2
+    environment:
+      QDRANT__SERVICE__API_KEY: ${ASKREPO_LOCAL_QDRANT_KEY:-local-development}
+    ports:
+      - "127.0.0.1:6333:6333"
+    volumes:
+      - qdrant-data:/qdrant/storage
+
+  backend:
+    build:
+      context: ./backend
+      args:
+        LITE_MODE: ${LITE_MODE:-false}
+    env_file:
+      - path: ./backend/.env
+        required: false
+    environment:
+      LITE_MODE: ${LITE_MODE:-false}
+      PORT: "7860"
+      ASKREPO_DATA_DIR: /data
+      ASKREPO_MODEL_CACHE: /opt/models
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_API_KEY: ${ASKREPO_LOCAL_QDRANT_KEY:-local-development}
+      ASKREPO_BOOTSTRAP_DEMOS: "false"
+      ASKREPO_TRUSTED_PROXIES: ""
+      ASKREPO_CORS_ORIGINS: '["http://localhost:5173","http://127.0.0.1:5173"]'
+    ports:
+      - "127.0.0.1:7860:7860"
+    volumes:
+      - backend-data:/data
+    depends_on:
+      - qdrant
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:7860/health', timeout=5)"]
+      interval: 15s
+      timeout: 6s
+      retries: 3
+      start_period: 30s
+
+  frontend:
+    profiles: [frontend]
+    image: node:22-bookworm
+    working_dir: /app
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0"
+    environment:
+      VITE_API_BASE_URL: http://localhost:7860
+      VITE_USE_MOCK: "false"
+    ports:
+      - "127.0.0.1:5173:5173"
+    volumes:
+      - ./frontend:/app
+      - frontend-node-modules:/app/node_modules
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  backend-data:
+  qdrant-data:
+  frontend-node-modules:

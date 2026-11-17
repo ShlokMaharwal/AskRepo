@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://render.com/schema/render.yaml.json
+services:
+  - type: web
+    name: askrepo-api
+    runtime: docker
+    plan: free
+    branch: main
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: LITE_MODE
+        value: "true"
+      - key: PORT
+        value: "7860"
+      - key: ASKREPO_DATA_DIR
+        value: /data
+      - key: ASKREPO_BOOTSTRAP_DEMOS
+        value: "true"
+      - key: ASKREPO_DEPLOYMENT_ID
+        value: askrepo-render
+      - key: ASKREPO_INDEXING_MODE
+        value: allowlist
+      - key: ASKREPO_TRUSTED_PROXIES
+        value: "*"
+      - key: ASKREPO_MAX_NEW_REPOS_PER_DAY
+        value: "5"
+      - key: ASKREPO_GEMINI_EMBEDDING_RPM
+        value: "10"
+      - key: ASKREPO_LLM_GLOBAL_RPM
+        value: "5"
+      - key: ASKREPO_LLM_PER_IP_RPM
+        value: "3"
+      - key: ASKREPO_MAX_QUEUED_JOBS
+        value: "2"
+      - key: ASKREPO_ANSWER_CACHE_SIZE
+        value: "32"
+      - key: AGENTIC_ENABLED
+        value: "false"
+      - key: GEMINI_FAST_MODEL
+        value: gemini-3.5-flash-lite
+      - key: GEMINI_ANSWER_MODEL
+        value: gemini-3.5-flash-lite
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
+      - key: ASKREPO_CORS_ORIGINS
+        sync: false
+      - key: ASKREPO_ADMIN_TOKEN
+        sync: false
