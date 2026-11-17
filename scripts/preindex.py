@@ -1,4 +1,4 @@
-"""Explicit demo ingestion. Run from anywhere; nothing is indexed on API startup."""
+"""Explicit demo ingestion CLI; hosted recovery uses optional background bootstrap."""
 
 import argparse
 import os

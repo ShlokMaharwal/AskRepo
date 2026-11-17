@@ -48,8 +48,12 @@ Complete validated answers use a bounded, ten-minute in-memory cache. Keys inclu
 
 See `.env.example` for exact defaults. New variables are `GEMINI_FAST_MODEL`, optional `GEMINI_ANSWER_MODEL` (otherwise `ASKREPO_GEMINI_MODEL`), `MAX_LLM_CALLS_PER_QUESTION`, `AGENTIC_ENABLED`, `ASKREPO_AGENTIC_GOOD_SCORE`, `ASKREPO_AGENTIC_LOWER_SCORE`, `ASKREPO_LLM_GLOBAL_RPM`, `ASKREPO_LLM_PER_IP_RPM`, `ASKREPO_LLM_QUEUE_WAIT_SECONDS`, `ASKREPO_LLM_MAX_QUEUED`, `ASKREPO_LLM_MAX_RETRIES`, `ASKREPO_LLM_RETRY_BACKOFF_SECONDS`, `ASKREPO_ANSWER_CACHE_SIZE`, and `ASKREPO_ANSWER_CACHE_TTL_SECONDS`.
 
-For Hugging Face Spaces, retain the Docker backend on port 7860. Add the exact Vercel origin to `ASKREPO_CORS_ORIGINS`, for example `["https://your-frontend.vercel.app"]`, and build the frontend with `VITE_API_BASE_URL=https://your-space.hf.space` and `VITE_USE_MOCK=false`. Both streaming and JSON POSTs use the same CORS policy. Do not send Gemini or Qdrant keys to the frontend. Verify streaming on the actual host before publishing; no deployment was performed here.
+For Render/Vercel hosting, follow [the deployment guide](../docs/DEPLOY.md).
+Set the exact frontend origin in `ASKREPO_CORS_ORIGINS` and build the frontend
+with the direct Render API URL. Both streaming and JSON POSTs use the same CORS
+policy. Keep provider/admin keys in backend secrets. See the guide for actual
+live smoke output; successful local tests alone do not prove hosted behavior.
 
 Free-tier quotas and availability depend on the provider/project. Limits are configurable safeguards, not a promise of unlimited free calls. `LITE_MODE=true` avoids local neural models and skips reranking, but uses Gemini embedding quota as well as text-generation quota. Qdrant Cloud stores vectors; files, registry and BM25 still need persistent backend storage. Keep agentic mode opt-in, or set `AGENTIC_ENABLED=false` to disable it server-wide.
 
-References: [Gemini text generation](https://ai.google.dev/gemini-api/docs/text-generation), [Gemini rate limits](https://ai.google.dev/gemini-api/docs/rate-limits), [fast model](https://ai.google.dev/gemini-api/docs/models/gemini-2.5-flash-lite), [Spaces Docker](https://huggingface.co/docs/hub/spaces-sdks-docker).
+References: [Gemini text generation](https://ai.google.dev/gemini-api/docs/text-generation), [Gemini rate limits](https://ai.google.dev/gemini-api/docs/rate-limits), [fast model](https://ai.google.dev/gemini-api/docs/models/gemini-2.5-flash-lite), [Render Docker](https://render.com/docs/docker).

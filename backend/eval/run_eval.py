@@ -284,7 +284,7 @@ def main():
     parser.add_argument("--repos", nargs="+", choices=DEMO_REPOS, default=list(DEMO_REPOS))
     parser.add_argument("--require-reviewed", action="store_true")
     parser.add_argument("--validate-only", action="store_true")
-    parser.add_argument("--readme", type=Path, default=Path("../README.md"))
+    parser.add_argument("--readme", type=Path, default=Path("../docs/EVALUATION.md"))
     parser.add_argument("--suite", choices=("retrieval", "advanced"), default="retrieval")
     parser.add_argument("--provider", choices=("extractive", "configured"), default="extractive")
     parser.add_argument("--advanced-data-dir", type=Path)

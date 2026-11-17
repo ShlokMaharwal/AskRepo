@@ -1,4 +1,4 @@
-"""AskRepo FastAPI application. Model downloads and ingestion are always explicit."""
+"""AskRepo FastAPI application with optional non-blocking demo recovery."""
 
 import logging
 from contextlib import asynccontextmanager
