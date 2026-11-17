@@ -25,6 +25,11 @@ class Settings(BaseSettings):
     embedding_model: str = "BAAI/bge-small-en-v1.5"
     reranker_model: str = "BAAI/bge-reranker-base"
     indexing_concurrency: int = Field(default=1, ge=1)
+    indexing_mode: Literal["open", "allowlist", "token"] = "open"
+    admin_token: SecretStr | None = None
+    lite_max_repo_bytes: int = Field(default=20 * 1024 * 1024, ge=1)
+    lite_max_files: int = Field(default=1500, ge=1)
+    max_new_repos_per_day: int = Field(default=20, ge=1)
     max_file_bytes: int = Field(default=300 * 1024, ge=1)
     max_repo_bytes: int = Field(default=100 * 1024 * 1024, ge=1)
     max_files: int = Field(default=10000, ge=1)

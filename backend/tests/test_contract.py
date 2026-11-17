@@ -68,6 +68,7 @@ def test_health_and_empty_registry(client):
         "maxLlmCalls": 3,
         "bootstrapEnabled": False,
         "demoRepos": [],
+        "indexingMode": "open",
     }
     assert client.get("/repos").json() == []
 

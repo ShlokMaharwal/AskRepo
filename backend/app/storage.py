@@ -40,6 +40,26 @@ class Storage:
                 id TEXT PRIMARY KEY, url TEXT NOT NULL, files INTEGER NOT NULL,
                 chunks INTEGER NOT NULL, indexed_at TEXT NOT NULL, revision TEXT NOT NULL,
                 status TEXT NOT NULL, embedding_model TEXT NOT NULL DEFAULT '')""")
+            connection.execute("""CREATE TABLE IF NOT EXISTS index_admissions (
+                day TEXT NOT NULL, url TEXT NOT NULL, PRIMARY KEY(day, url))""")
+
+    def admit_index(self, url, limit):
+        """One UTC-day allowance shared by every client of this registry."""
+        today = datetime.now(UTC).date().isoformat()
+        with self.lock, self.connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            connection.execute("DELETE FROM index_admissions WHERE day < ?", (today,))
+            if connection.execute(
+                "SELECT 1 FROM index_admissions WHERE day=? AND url=?", (today, url.lower())
+            ).fetchone():
+                return True
+            count = connection.execute(
+                "SELECT COUNT(*) FROM index_admissions WHERE day=?", (today,)
+            ).fetchone()[0]
+            if count >= limit:
+                return False
+            connection.execute("INSERT INTO index_admissions VALUES (?,?)", (today, url.lower()))
+            return True
 
     @contextmanager
     def connect(self):

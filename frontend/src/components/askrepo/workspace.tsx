@@ -671,6 +671,7 @@ export function Workspace() {
             <Landing
               onIndex={(url) => void index(url)}
               onDemo={(name) => void openDemo(name)}
+              indexingMode={health.data?.indexingMode}
               busy={busy || !hydrated || !backendReady}
               error={error}
             />

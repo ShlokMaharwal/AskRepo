@@ -35,3 +35,20 @@ application's resolver and avoids trusting/reprocessing the same header twice.
 Do not replace this with Uvicorn's `*`, which would discard that evidence before
 the application checks it. Both API and text-provider limits use the resolved
 address. Startup logs the active mode without credentials.
+
+## Public indexing policy
+
+Local development defaults to `ASKREPO_INDEXING_MODE=open`. For the public demo,
+use `allowlist`: only URLs in `ASKREPO_DEMO_REPOS` can be indexed. `token` permits
+indexing new repositories only with `X-Admin-Token` matching the backend-only
+`ASKREPO_ADMIN_TOKEN`; querying is public in every mode. The browser does not
+collect or store the admin token. Already prepared demos can still be opened.
+
+Lite ingestion is capped at 20 MB and 1,500 total files, or stricter regular
+limits, before checkout and again when reading sources. Configure these with
+`ASKREPO_LITE_MAX_REPO_BYTES` and `ASKREPO_LITE_MAX_FILES`.
+`ASKREPO_MAX_NEW_REPOS_PER_DAY` bounds distinct repository URLs admitted per UTC
+day, including bootstrap, across all clients. Failed attempts consume a slot;
+retrying the same URL does not consume another. This ledger is SQLite-backed,
+not distributed. It survives restarts only if the registry survives; ephemeral
+disk loss resets it. Keep allowlist mode enabled to bound abuse across resets.

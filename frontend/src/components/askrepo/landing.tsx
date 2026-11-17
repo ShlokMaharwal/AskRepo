@@ -19,11 +19,13 @@ export function Landing({
   onDemo,
   busy,
   error,
+  indexingMode = "open",
 }: {
   onIndex: (url: string) => void;
   onDemo: (name: string) => void;
   busy: boolean;
   error: string;
+  indexingMode?: "open" | "allowlist" | "token" | undefined;
 }) {
   const [url, setUrl] = useState("");
   function submit(event: FormEvent) {
@@ -59,13 +61,20 @@ export function Landing({
           placeholder="https://github.com/owner/repository"
           value={url}
           onChange={(event) => setUrl(event.target.value)}
-          disabled={busy}
+          disabled={busy || indexingMode !== "open"}
         />
-        <button className="primary-button" type="submit" disabled={busy}>
+        <button className="primary-button" type="submit" disabled={busy || indexingMode !== "open"}>
           {busy ? <Loader2 className="spin" size={15} /> : null} Index repository{" "}
           <ArrowRight size={15} />
         </button>
       </form>
+      {indexingMode !== "open" && (
+        <p className="demo-disclaimer" role="note">
+          {indexingMode === "allowlist"
+            ? "This public demo indexes only the demo repositories. Choose a demo below."
+            : "Indexing new repositories requires an admin token. Choose an available demo below."}
+        </p>
+      )}
       {error && (
         <p className="error-notice" role="alert">
           {error}

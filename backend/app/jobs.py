@@ -9,6 +9,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from app.config import Settings
+from app.index_policy import DailyIndexLimit
 from app.ingest.chunker import chunk_file
 from app.ingest.clone import IngestError, clone_repository, source_files
 from app.models import JobStatus
@@ -50,6 +51,10 @@ class Jobs:
                 return self.active_urls[url.lower()]
             if self.pending >= self.settings.indexing_concurrency + self.settings.max_queued_jobs:
                 raise OverflowError("Indexing queue is full; try again later")
+            if not self.storage.admit_index(url, self.settings.max_new_repos_per_day):
+                raise DailyIndexLimit(
+                    "Daily repository indexing limit reached; try again tomorrow."
+                )
             # Keep the registry bounded, retaining active jobs and the most recent outcomes.
             for key in list(self.jobs):
                 if len(self.jobs) < 500:
@@ -66,6 +71,19 @@ class Jobs:
     def get(self, job_id: str) -> JobStatus:
         with self.lock:
             return self.jobs[job_id].model_copy()
+
+    def ready_job(self, repo):
+        with self.lock:
+            for key in list(self.jobs):
+                if len(self.jobs) < 500:
+                    break
+                if self.jobs[key].status in {"ready", "failed"}:
+                    del self.jobs[key]
+            job_id = uuid4().hex
+            self.jobs[job_id] = JobStatus(
+                status="ready", files_parsed=repo.files, chunks_created=repo.chunks
+            )
+            return job_id, repo.repo_id
 
     def update(self, job_id: str, **updates):
         with self.lock:

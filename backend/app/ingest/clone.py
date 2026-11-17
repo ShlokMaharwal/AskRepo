@@ -79,10 +79,29 @@ class IngestError(ValueError):
     pass
 
 
+def repository_limits(settings):
+    if settings.lite_mode:
+        return min(settings.max_files, settings.lite_max_files), min(
+            settings.max_repo_bytes, settings.lite_max_repo_bytes
+        )
+    return settings.max_files, settings.max_repo_bytes
+
+
+def limit_message(settings):
+    if settings.lite_mode:
+        files, size = repository_limits(settings)
+        return (
+            f"Repository exceeds lightweight hosting limits: at most {files} files "
+            f"and {size / (1024 * 1024):g} MB. Try a smaller repository."
+        )
+    return "Repository exceeds the configured total file count or size limit"
+
+
 def tree_entries(stream, settings):
     """Bound ls-tree output while reading, before allocating an entire remote tree listing."""
     pending = b""
     count = total = 0
+    max_files, max_bytes = repository_limits(settings)
     while block := stream.read(8192):
         pending += block
         while b"\0" in pending:
@@ -96,10 +115,8 @@ def tree_entries(stream, settings):
             count += 1
             if kind == b"blob" and mode != b"120000":
                 total += int(length)
-            if count > settings.max_files or total > settings.max_repo_bytes:
-                raise IngestError(
-                    "Repository exceeds the configured total file count or size limit"
-                )
+            if count > max_files or total > max_bytes:
+                raise IngestError(limit_message(settings))
             yield entry
         if len(pending) > 8192:
             raise IngestError("Repository contains an unsupported file path")
@@ -240,6 +257,7 @@ def clone_repository(url: str, destination: Path, settings: Settings) -> str:
 def source_files(root: Path, settings: Settings) -> list[tuple[str, str]]:
     result = []
     total = count = 0
+    max_files, max_bytes = repository_limits(settings)
     for directory, subdirs, files in os.walk(root, followlinks=False):
         subdirs[:] = sorted(
             name
@@ -253,10 +271,8 @@ def source_files(root: Path, settings: Settings) -> list[tuple[str, str]]:
             count += 1
             size = path.stat().st_size
             total += size
-            if count > settings.max_files or total > settings.max_repo_bytes:
-                raise IngestError(
-                    "Repository exceeds the configured total file count or size limit"
-                )
+            if count > max_files or total > max_bytes:
+                raise IngestError(limit_message(settings))
             if (
                 name in SKIP_NAMES
                 or name.startswith(".env.")

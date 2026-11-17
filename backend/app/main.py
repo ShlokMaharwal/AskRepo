@@ -11,6 +11,7 @@ from app.config import Settings
 from app.errors import DemoLimitError, IndexConfigurationError
 from app.generate.llm import get_llm
 from app.index.vectors import Vectors, get_embedder
+from app.index_policy import DailyIndexLimit, authorize_index
 from app.jobs import Jobs
 from app.models import (
     AskRequest,
@@ -73,7 +74,7 @@ def create_app(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_methods=["GET", "POST"],
-        allow_headers=["Content-Type"],
+        allow_headers=["Content-Type", "X-Admin-Token"],
     )
 
     def require_repo(repo_id):
@@ -97,12 +98,34 @@ def create_app(
             "maxLlmCalls": settings.max_llm_calls_per_question,
             "bootstrapEnabled": settings.bootstrap_demos,
             "demoRepos": application.state.bootstrap.snapshot(),
+            "indexingMode": settings.indexing_mode,
         }
 
     @application.post("/index", response_model=IndexResponse)
-    def start_index(request: IndexRequest):
+    def start_index(request: IndexRequest, http_request: Request):
+        existing = next(
+            (
+                repo
+                for repo in application.state.storage.repos()
+                if repo.repo_url.lower() == request.repo_url.lower()
+                and application.state.storage.metadata(repo.repo_id)["embedding_model"]
+                == application.state.retriever.vectors.embedder.name
+            ),
+            None,
+        )
+        authorize_index(
+            settings,
+            request.repo_url,
+            http_request.headers.get("X-Admin-Token"),
+            already_ready=existing is not None,
+        )
+        if existing is not None and settings.indexing_mode != "open":
+            job_id, repo_id = application.state.jobs.ready_job(existing)
+            return IndexResponse(job_id=job_id, repo_id=repo_id)
         try:
             job_id, repo_id = application.state.jobs.submit(request.repo_url)
+        except DailyIndexLimit as error:
+            raise HTTPException(429, str(error), headers={"Retry-After": "86400"}) from error
         except OverflowError as error:
             raise HTTPException(429, str(error), headers={"Retry-After": "60"}) from error
         return IndexResponse(job_id=job_id, repo_id=repo_id)
